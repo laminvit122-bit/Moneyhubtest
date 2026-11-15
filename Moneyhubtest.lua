@@ -66,7 +66,9 @@ local function playEnableSound()
     end)
 end
 
--- КРАСИВОЕ УВЕДОМЛЕНИЕ ОБ ОШИБКИ (ИСПРАВЛЕННЫЙ ДИЗАЙН И РАСПОЛОЖЕНИЕ)
+-- УВЕДОМЛЕНИЕ: ПЛАВНЫЙ ГРАДИЕНТ И КРЕСТИК СПРАВА
+local activeErrorNotification = nil
+
 local function showAbilityErrorNotification(onCompleted)
     pcall(function()
         local sound = Instance.new("Sound")
@@ -77,81 +79,91 @@ local function showAbilityErrorNotification(onCompleted)
         task.delay(2, function() sound:Destroy() end)
     end)
 
+    if activeErrorNotification and activeErrorNotification.Parent then
+        activeErrorNotification:Destroy()
+        activeErrorNotification = nil
+    end
+
     local errContainer = Instance.new("Frame")
-    errContainer.Size = UDim2.new(0, 340, 0, 54)
+    errContainer.Size = UDim2.new(0, 340, 0, 50)
     errContainer.Position = UDim2.new(0.5, -170, 1, 70)
     errContainer.BackgroundTransparency = 1
-    errContainer.ZIndex = 600
+    errContainer.ZIndex = 800
     errContainer.Parent = screenGui
+    activeErrorNotification = errContainer
 
     local errBg = Instance.new("Frame")
     errBg.Size = UDim2.new(1, 0, 1, 0)
     errBg.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
     errBg.BackgroundTransparency = 0.02
     errBg.BorderSizePixel = 0
-    errBg.ZIndex = 601
+    errBg.ZIndex = 801
     errBg.Parent = errContainer
 
     local errCorner = Instance.new("UICorner")
-    errCorner.CornerRadius = UDim.new(0, 14)
+    errCorner.CornerRadius = UDim.new(0, 12)
     errCorner.Parent = errBg
 
     local errStroke = Instance.new("UIStroke")
-    errStroke.Color = Color3.fromRGB(255, 180, 180)
-    errStroke.Transparency = 0.5
+    errStroke.Color = Color3.fromRGB(255, 160, 160)
+    errStroke.Transparency = 0.4
     errStroke.Thickness = 1.5
     errStroke.Parent = errBg
 
+    -- ПЛАВНЫЙ ГРАДИЕНТ ПО ВСЕЙ ДЛИНЕ (без резких линий)
     local errGradient = Instance.new("UIGradient")
     errGradient.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(235, 95, 95)),
-        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(235, 95, 95)),
-        ColorSequenceKeypoint.new(0.501, Color3.fromRGB(155, 25, 25)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(155, 25, 25))
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(215, 75, 75)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(130, 15, 15))
     })
     errGradient.Parent = errBg
 
-    -- Крестик / Иконка ошибки сдвинута правее
+    -- Крестик / Иконка ошибки СУГУБО СПРАВА
     local errIcon = Instance.new("ImageLabel")
-    errIcon.Size = UDim2.new(0, 28, 0, 28)
-    errIcon.Position = UDim2.new(0, 20, 0.5, -14)
+    errIcon.Size = UDim2.new(0, 24, 0, 24)
+    errIcon.Position = UDim2.new(1, -36, 0.5, -12)
     errIcon.BackgroundTransparency = 1
     errIcon.Image = "rbxassetid://12633679807"
-    errIcon.ZIndex = 602
+    errIcon.ZIndex = 802
     errIcon.Parent = errBg
 
-    -- Отступ текста, чтобы не было криво
+    -- Текст слева с отступом
     local errLbl = Instance.new("TextLabel")
-    errLbl.Size = UDim2.new(1, -65, 1, 0)
-    errLbl.Position = UDim2.new(0, 58, 0, 0)
+    errLbl.Size = UDim2.new(1, -55, 1, 0)
+    errLbl.Position = UDim2.new(0, 18, 0, 0)
     errLbl.BackgroundTransparency = 1
     errLbl.Font = Enum.Font.GothamBold
     errLbl.Text = "Выберите способность"
     errLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
-    errLbl.TextSize = 14
+    errLbl.TextSize = 13
     errLbl.TextXAlignment = Enum.TextXAlignment.Left
-    errLbl.ZIndex = 602
+    errLbl.ZIndex = 802
     errLbl.Parent = errBg
 
     local errShadow = Instance.new("UIStroke")
-    errShadow.Color = Color3.fromRGB(80, 10, 10)
+    errShadow.Color = Color3.fromRGB(60, 5, 5)
     errShadow.Thickness = 1
     errShadow.Parent = errLbl
 
-    TweenService:Create(errContainer, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-        Position = UDim2.new(0.5, -170, 1, -85)
+    TweenService:Create(errContainer, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+        Position = UDim2.new(0.5, -170, 1, -80)
     }):Play()
 
-    task.delay(3.0, function()
-        local tw = TweenService:Create(errContainer, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-            Position = UDim2.new(0.5, -170, 1, 70),
-            BackgroundTransparency = 1
-        })
-        tw:Play()
-        tw.Completed:Connect(function()
-            errContainer:Destroy()
-            if onCompleted then onCompleted() end
-        end)
+    task.delay(2.8, function()
+        if errContainer and errContainer.Parent then
+            local tw = TweenService:Create(errContainer, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+                Position = UDim2.new(0.5, -170, 1, 70),
+                BackgroundTransparency = 1
+            })
+            tw:Play()
+            tw.Completed:Connect(function()
+                if activeErrorNotification == errContainer then
+                    activeErrorNotification = nil
+                end
+                errContainer:Destroy()
+                if onCompleted then onCompleted() end
+            end)
+        end
     end)
 end
 
@@ -750,7 +762,7 @@ searchInput:GetPropertyChangedSignal("Text"):Connect(function()
     end
 end)
 
--- 1. AutoFarm (с выбором способности Martial Artist на первой строке настроек)
+-- 1. AutoFarm
 local setAutoFarmUIFunc
 _, setAutoFarmUIFunc = createModuleCard(mainPage, "AutoFarm", "Обычные удары, способности и ульта", "Normal attacks, skills and ultimate", function(state)
     autoFarmEnabled = state
@@ -1200,7 +1212,7 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
     end
 end)
 
--- Visuals (Вкладка Modules / Visuals)
+-- Visuals
 createModuleCard(visualsPage, "Fullbright", "Максимально светлое освещение карты", "Maximum bright map lighting", function(state)
     fullbrightEnabled = state
     if fullbrightEnabled then
