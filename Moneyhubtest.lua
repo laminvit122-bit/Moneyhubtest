@@ -66,7 +66,7 @@ local function playEnableSound()
     end)
 end
 
--- КОМПАКТНОЕ ТЁМНО-КРАСНОЕ УВЕДОМЛЕНИЕ БЕЗ ОБВОДКИ (НОВАЯ ИКОНКА СПРАВА, ТЕКСТ НЕ НАЛАГАЕТСЯ)
+-- УВЕДОМЛЕНИЕ: ПЛАВНЫЙ КРАСНЫЙ ГРАДИЕНТ И НОВАЯ ИКОНКА СПРАВА
 local activeErrorNotification = nil
 
 local function showAbilityErrorNotification(onCompleted)
@@ -94,7 +94,7 @@ local function showAbilityErrorNotification(onCompleted)
 
     local errBg = Instance.new("Frame")
     errBg.Size = UDim2.new(1, 0, 1, 0)
-    errBg.BackgroundColor3 = Color3.fromRGB(130, 20, 20) -- Полностью тёмно-красный цвет
+    errBg.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
     errBg.BackgroundTransparency = 0.05
     errBg.BorderSizePixel = 0
     errBg.ZIndex = 801
@@ -104,18 +104,24 @@ local function showAbilityErrorNotification(onCompleted)
     errCorner.CornerRadius = UDim.new(0, 10)
     errCorner.Parent = errBg
 
-    -- Обводка полностью удалена по вашему запросу
+    -- Плавный градиент (мягкий переход цветов без резких линий)
+    local errGradient = Instance.new("UIGradient")
+    errGradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(235, 50, 50)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(110, 10, 10))
+    })
+    errGradient.Parent = errBg
 
     -- Новая текстура крестика справа
     local errIcon = Instance.new("ImageLabel")
     errIcon.Size = UDim2.new(0, 22, 0, 22)
     errIcon.Position = UDim2.new(1, -32, 0.5, -11)
     errIcon.BackgroundTransparency = 1
-    errIcon.Image = "rbxassetid://108763969359765"
+    errIcon.Image = "rbxassetid://87983057610468"
     errIcon.ZIndex = 802
     errIcon.Parent = errBg
 
-    -- Текст слева с безопасным отступом, чтобы не налезал на иконку
+    -- Текст слева с безопасным отступом
     local errLbl = Instance.new("TextLabel")
     errLbl.Size = UDim2.new(1, -48, 1, 0)
     errLbl.Position = UDim2.new(0, 16, 0, 0)
