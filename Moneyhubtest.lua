@@ -19,13 +19,13 @@ local camera = Workspace.CurrentCamera
 
 local TEXTURE_ID = "rbxassetid://9343433823"
 local CROSS_TEXTURE_ID = "rbxassetid://87983057610468"
--- Вставь сюда rbxassetid загруженной в Roblox рамки с 1-го скрина (если не загружена, используется fallback-стиль)
 local NOTIFY_FRAME_ID = ""
 
 local MODULES_ICON = "rbxassetid://82633060732202"
 local SETTINGS_ICON = "rbxassetid://138028255370142"
 local MAIN_ICON = "rbxassetid://14502433595"
 local VISUALS_ICON = "rbxassetid://11322089611"
+local TELEPORT_ICON = "rbxassetid://14502433595"
 local LANGUAGE_ICON = "rbxassetid://84460102482950"
 local CONFIGS_ICON = "rbxassetid://90837140373377"
 local GEAR_ICON = "rbxassetid://6953984741"
@@ -112,7 +112,6 @@ local function showAbilityErrorNotification(onCompleted)
     errCorner.CornerRadius = UDim.new(0, 8)
     errCorner.Parent = errBg
 
-    -- Плавная красно-тёмная заливка и диагональный блик как на 1-м скрине
     local errGradient = Instance.new("UIGradient")
     errGradient.Color = ColorSequence.new({
         ColorSequenceKeypoint.new(0, Color3.fromRGB(165, 16, 24)),
@@ -132,7 +131,6 @@ local function showAbilityErrorNotification(onCompleted)
     diagSheen.ZIndex = 802
     diagSheen.Parent = errBg
 
-    -- Текстура самой рамки (если задан NOTIFY_FRAME_ID)
     if NOTIFY_FRAME_ID ~= "" then
         local frameArt = Instance.new("ImageLabel")
         frameArt.Size = UDim2.new(1, 0, 1, 0)
@@ -142,7 +140,6 @@ local function showAbilityErrorNotification(onCompleted)
         frameArt.ZIndex = 803
         frameArt.Parent = errBg
     else
-        -- Тонкая неоновая красная окантовка по краям
         local borderStroke = Instance.new("UIStroke")
         borderStroke.Color = Color3.fromRGB(255, 38, 52)
         borderStroke.Thickness = 1.8
@@ -151,7 +148,6 @@ local function showAbilityErrorNotification(onCompleted)
         borderStroke.Parent = errBg
     end
 
-    -- Контейнер под крестик справа с обрезкой, чтобы текстура крестика не вылезала влево
     local iconHolder = Instance.new("Frame")
     iconHolder.Size = UDim2.new(0, 44, 0, 44)
     iconHolder.Position = UDim2.new(1, -54, 0.5, -22)
@@ -170,7 +166,6 @@ local function showAbilityErrorNotification(onCompleted)
     errIcon.ZIndex = 805
     errIcon.Parent = iconHolder
 
-    -- Текст слева: жёстко ограничен по ширине (заканчивается до iconHolder)
     local errLbl = Instance.new("TextLabel")
     errLbl.Size = UDim2.new(1, -82, 1, 0)
     errLbl.Position = UDim2.new(0, 20, 0, 0)
@@ -331,9 +326,9 @@ versionLabel.TextXAlignment = Enum.TextXAlignment.Left
 versionLabel.ZIndex = 3
 versionLabel.Parent = sidebar
 
--- СЕКЦИЯ MODULES (Main + Visuals)
+-- СЕКЦИЯ MODULES (Main + Visuals + Teleport)
 local modulesIconImg = Instance.new("ImageLabel") modulesIconImg.Size = UDim2.new(0, 14, 0, 14) modulesIconImg.Position = UDim2.new(0, 12, 0, 55) modulesIconImg.BackgroundTransparency = 1 modulesIconImg.Image = MODULES_ICON modulesIconImg.ZIndex = 3 modulesIconImg.Parent = sidebar
-local modulesHeader = Instance.new("TextLabel") modulesHeader.Size = UDim2.new(1, -32, 0, 20) modulesHeader.Position = UDim2.new(0, 34, 0, 52) modulesHeader.BackgroundTransparency = 1 modulesHeader.Font = Enum.Font.GothamBold modulesHeader.Text = "Modules" modulesHeader.TextColor3 = Color3.fromRGB(210, 150, 90) modulesHeader.TextSize = 11 modulesHeader.TextXAlignment = Enum.TextXAlignment.Left modulesHeader.ZIndex = 3 modulesHeader.Parent = sidebar
+local modulesHeader = Instance.new("TextLabel") modulesHeader.Size = UDim2.new(0, 100, 0, 20) modulesHeader.Position = UDim2.new(0, 32, 0, 52) modulesHeader.BackgroundTransparency = 1 modulesHeader.Font = Enum.Font.GothamBold modulesHeader.Text = "Modules" modulesHeader.TextColor3 = Color3.fromRGB(210, 150, 90) modulesHeader.TextSize = 11 modulesHeader.TextXAlignment = Enum.TextXAlignment.Left modulesHeader.ZIndex = 3 modulesHeader.Parent = sidebar
 
 local mainTabBtn = Instance.new("TextButton")
 mainTabBtn.Size = UDim2.new(1, -20, 0, 26)
@@ -367,13 +362,29 @@ visualsTabBtn.Parent = sidebar
 local visualsTabCorner = Instance.new("UICorner") visualsTabCorner.CornerRadius = UDim.new(0, 6) visualsTabCorner.Parent = visualsTabBtn
 local visualsIconImg = Instance.new("ImageLabel") visualsIconImg.Size = UDim2.new(0, 14, 0, 14) visualsIconImg.Position = UDim2.new(0, 12, 0, 6) visualsIconImg.BackgroundTransparency = 1 visualsIconImg.Image = VISUALS_ICON visualsIconImg.ZIndex = 4 visualsIconImg.Parent = visualsTabBtn
 
--- СЕКЦИЯ SETTINGS (Language + Configs)
-local settingsIconImg = Instance.new("ImageLabel") settingsIconImg.Size = UDim2.new(0, 14, 0, 14) settingsIconImg.Position = UDim2.new(0, 12, 0, 144) settingsIconImg.BackgroundTransparency = 1 settingsIconImg.Image = SETTINGS_ICON settingsIconImg.ZIndex = 3 settingsIconImg.Parent = sidebar
-local settingsHeader = Instance.new("TextLabel") settingsHeader.Size = UDim2.new(1, -32, 0, 20) settingsHeader.Position = UDim2.new(0, 34, 0, 141) settingsHeader.BackgroundTransparency = 1 settingsHeader.Font = Enum.Font.GothamBold settingsHeader.Text = "Settings" settingsHeader.TextColor3 = Color3.fromRGB(210, 150, 90) settingsHeader.TextSize = 11 modulesHeader.TextXAlignment = Enum.TextXAlignment.Left settingsHeader.ZIndex = 3 settingsHeader.Parent = sidebar
+local teleportTabBtn = Instance.new("TextButton")
+teleportTabBtn.Size = UDim2.new(1, -20, 0, 26)
+teleportTabBtn.Position = UDim2.new(0, 10, 0, 135)
+teleportTabBtn.BackgroundColor3 = Color3.fromRGB(54, 34, 18)
+teleportTabBtn.BackgroundTransparency = 0.5
+teleportTabBtn.Text = "             Teleport"
+teleportTabBtn.TextColor3 = Color3.fromRGB(200, 160, 120)
+teleportTabBtn.TextSize = 11
+teleportTabBtn.Font = Enum.Font.GothamMedium
+teleportTabBtn.TextXAlignment = Enum.TextXAlignment.Left
+teleportTabBtn.ZIndex = 3
+teleportTabBtn.Parent = sidebar
+
+local teleportTabCorner = Instance.new("UICorner") teleportTabCorner.CornerRadius = UDim.new(0, 6) teleportTabCorner.Parent = teleportTabBtn
+local teleportIconImg = Instance.new("ImageLabel") teleportIconImg.Size = UDim2.new(0, 14, 0, 14) teleportIconImg.Position = UDim2.new(0, 12, 0, 6) teleportIconImg.BackgroundTransparency = 1 teleportIconImg.Image = TELEPORT_ICON teleportIconImg.ZIndex = 4 teleportIconImg.Parent = teleportTabBtn
+
+-- СЕКЦИЯ SETTINGS (Language + Configs) — выровнено по левому краю
+local settingsIconImg = Instance.new("ImageLabel") settingsIconImg.Size = UDim2.new(0, 14, 0, 14) settingsIconImg.Position = UDim2.new(0, 12, 0, 174) settingsIconImg.BackgroundTransparency = 1 settingsIconImg.Image = SETTINGS_ICON settingsIconImg.ZIndex = 3 settingsIconImg.Parent = sidebar
+local settingsHeader = Instance.new("TextLabel") settingsHeader.Size = UDim2.new(0, 100, 0, 20) settingsHeader.Position = UDim2.new(0, 32, 0, 171) settingsHeader.BackgroundTransparency = 1 settingsHeader.Font = Enum.Font.GothamBold settingsHeader.Text = "Settings" settingsHeader.TextColor3 = Color3.fromRGB(210, 150, 90) settingsHeader.TextSize = 11 settingsHeader.TextXAlignment = Enum.TextXAlignment.Left settingsHeader.ZIndex = 3 settingsHeader.Parent = sidebar
 
 local languageTabBtn = Instance.new("TextButton")
 languageTabBtn.Size = UDim2.new(1, -20, 0, 26)
-languageTabBtn.Position = UDim2.new(0, 10, 0, 165)
+languageTabBtn.Position = UDim2.new(0, 10, 0, 195)
 languageTabBtn.BackgroundColor3 = Color3.fromRGB(54, 34, 18)
 languageTabBtn.BackgroundTransparency = 0.5
 languageTabBtn.Text = "             Language"
@@ -389,7 +400,7 @@ local languageIconImg = Instance.new("ImageLabel") languageIconImg.Size = UDim2.
 
 local configTabBtn = Instance.new("TextButton")
 configTabBtn.Size = UDim2.new(1, -20, 0, 26)
-configTabBtn.Position = UDim2.new(0, 10, 0, 195)
+configTabBtn.Position = UDim2.new(0, 10, 0, 225)
 configTabBtn.BackgroundColor3 = Color3.fromRGB(54, 34, 18)
 configTabBtn.BackgroundTransparency = 0.5
 configTabBtn.Text = "             Configs"
@@ -553,6 +564,18 @@ visualsPadding.PaddingBottom = UDim.new(0, 30)
 visualsPadding.PaddingRight = UDim.new(0, 5)
 visualsPadding.Parent = visualsPage
 
+local teleportPage = Instance.new("ScrollingFrame")
+teleportPage.Name = "TeleportPage"
+teleportPage.Size = UDim2.new(1, -190, 1, -90)
+teleportPage.Position = UDim2.new(0, 175, 0, 78)
+teleportPage.BackgroundTransparency = 1
+teleportPage.CanvasSize = UDim2.new(0, 0, 0, 0)
+teleportPage.AutomaticCanvasSize = Enum.AutomaticSize.Y
+teleportPage.ScrollBarThickness = 4
+teleportPage.Visible = false
+teleportPage.ZIndex = 2
+teleportPage.Parent = contentContainer
+
 local languagePage = Instance.new("ScrollingFrame")
 languagePage.Name = "LanguagePage"
 languagePage.Size = UDim2.new(1, -190, 1, -90)
@@ -575,9 +598,12 @@ configPage.Visible = false
 configPage.ZIndex = 2
 configPage.Parent = contentContainer
 
+local refreshTeleportList -- объявим ниже
+
 local function switchTab(tabName)
     mainPage.Visible = (tabName == "Main")
     visualsPage.Visible = (tabName == "Visuals")
+    teleportPage.Visible = (tabName == "Teleport")
     languagePage.Visible = (tabName == "Language")
     configPage.Visible = (tabName == "Configs")
 
@@ -585,6 +611,9 @@ local function switchTab(tabName)
         sectionTitle.Text = "Modules / Main"
     elseif tabName == "Visuals" then
         sectionTitle.Text = "Modules / Visuals"
+    elseif tabName == "Teleport" then
+        sectionTitle.Text = "Modules / Teleport"
+        if refreshTeleportList then refreshTeleportList() end
     elseif tabName == "Language" then
         sectionTitle.Text = "Settings / Language"
     elseif tabName == "Configs" then
@@ -597,6 +626,9 @@ local function switchTab(tabName)
     visualsTabBtn.BackgroundColor3 = (tabName == "Visuals") and Color3.fromRGB(85, 50, 22) or Color3.fromRGB(54, 34, 18)
     visualsTabBtn.TextColor3 = (tabName == "Visuals") and Color3.fromRGB(255, 225, 180) or Color3.fromRGB(200, 160, 120)
 
+    teleportTabBtn.BackgroundColor3 = (tabName == "Teleport") and Color3.fromRGB(85, 50, 22) or Color3.fromRGB(54, 34, 18)
+    teleportTabBtn.TextColor3 = (tabName == "Teleport") and Color3.fromRGB(255, 225, 180) or Color3.fromRGB(200, 160, 120)
+
     languageTabBtn.BackgroundColor3 = (tabName == "Language") and Color3.fromRGB(85, 50, 22) or Color3.fromRGB(54, 34, 18)
     languageTabBtn.TextColor3 = (tabName == "Language") and Color3.fromRGB(255, 225, 180) or Color3.fromRGB(200, 160, 120)
 
@@ -606,6 +638,7 @@ end
 
 mainTabBtn.MouseButton1Click:Connect(function() switchTab("Main") end)
 visualsTabBtn.MouseButton1Click:Connect(function() switchTab("Visuals") end)
+teleportTabBtn.MouseButton1Click:Connect(function() switchTab("Teleport") end)
 languageTabBtn.MouseButton1Click:Connect(function() switchTab("Language") end)
 configTabBtn.MouseButton1Click:Connect(function() switchTab("Configs") end)
 
@@ -651,6 +684,39 @@ local setCosmicAuraUIState = nil
 local updateAimButtonsVisual = nil
 local setAimSliderValue = nil
 local setSpeedSliderValue = nil
+
+-- АВТОВЫБОР СПОСОБНОСТИ MARTIAL ARTIST В ИГРЕ ПО ПУТИ ИЗ DEX
+local function equipMartialArtistInGame()
+    local ok = pcall(function()
+        local charData = playerGui:FindFirstChild("CharacterData")
+        if not charData then return end
+        local innerCharData = charData:FindFirstChild("Character Data")
+        local bg = innerCharData and innerCharData:FindFirstChild("Bg")
+        local scroll = bg and bg:FindFirstChild("ScrollingFrame")
+        local martialEntry = scroll and scroll:FindFirstChild("MARTIAL ARTIST")
+
+        local targetsToFire = {}
+        if martialEntry then
+            table.insert(targetsToFire, martialEntry)
+            for _, desc in ipairs(martialEntry:GetDescendants()) do
+                if desc:IsA("GuiButton") then
+                    table.insert(targetsToFire, desc)
+                end
+            end
+        end
+
+        for _, obj in ipairs(targetsToFire) do
+            if obj:IsA("TextButton") or obj:IsA("ImageButton") then
+                if firesignal then
+                    pcall(function() firesignal(obj.MouseButton1Click) end)
+                    pcall(function() firesignal(obj.Activated) end)
+                end
+                pcall(function() obj:Activate() end)
+            end
+        end
+    end)
+    return ok
+end
 
 local translatableCards = {}
 local function updateAllTranslations()
@@ -734,6 +800,10 @@ local function createModuleCard(parent, title, descRu, descEn, callbackToggle, h
 
         isEnabled = val
         if isEnabled then
+            if title == "AutoFarm" and selectedStyle == "MartialArtist" then
+                equipMartialArtistInGame()
+                task.wait(0.15)
+            end
             TweenService:Create(toggleFrame, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(255, 120, 0)}):Play()
             TweenService:Create(toggleDot, TweenInfo.new(0.2), {Position = UDim2.new(1, -16, 0, 2), BackgroundColor3 = Color3.fromRGB(255, 255, 255)}):Play()
             playEnableSound()
@@ -821,11 +891,7 @@ end, true, function(panel)
     martialBtn.Size = UDim2.new(1, 0, 0, 26)
     martialBtn.Position = UDim2.new(0, 0, 0, 20)
     martialBtn.BackgroundColor3 = Color3.fromRGB(50, 28, 14)
-    martialBtn.Text = "      Martial Artist"
-    martialBtn.TextColor3 = Color3.fromRGB(200, 160, 120)
-    martialBtn.TextSize = 10
-    martialBtn.Font = Enum.Font.GothamBold
-    martialBtn.TextXAlignment = Enum.TextXAlignment.Left
+    martialBtn.Text = ""
     martialBtn.ZIndex = 11
     martialBtn.Parent = panel
     local mbC = Instance.new("UICorner") mbC.CornerRadius = UDim.new(0, 6) mbC.Parent = martialBtn
@@ -838,17 +904,31 @@ end, true, function(panel)
     martialIcon.ZIndex = 12
     martialIcon.Parent = martialBtn
 
+    -- Отдельная надпись справа от иконки, чтобы иконка никогда не залезала на текст
+    local martialTextLbl = Instance.new("TextLabel")
+    martialTextLbl.Size = UDim2.new(1, -30, 1, 0)
+    martialTextLbl.Position = UDim2.new(0, 28, 0, 0)
+    martialTextLbl.BackgroundTransparency = 1
+    martialTextLbl.Text = "Martial Artist"
+    martialTextLbl.TextColor3 = Color3.fromRGB(200, 160, 120)
+    martialTextLbl.TextSize = 10
+    martialTextLbl.Font = Enum.Font.GothamBold
+    martialTextLbl.TextXAlignment = Enum.TextXAlignment.Left
+    martialTextLbl.ZIndex = 12
+    martialTextLbl.Parent = martialBtn
+
     martialBtn.MouseButton1Click:Connect(function()
         if selectedStyle == "MartialArtist" then
             selectedStyle = ""
             martialBtn.BackgroundColor3 = Color3.fromRGB(50, 28, 14)
-            martialBtn.TextColor3 = Color3.fromRGB(200, 160, 120)
+            martialTextLbl.TextColor3 = Color3.fromRGB(200, 160, 120)
             showNotification("AutoFarm", "Способность сброшена")
         else
             selectedStyle = "MartialArtist"
             martialBtn.BackgroundColor3 = Color3.fromRGB(255, 120, 0)
-            martialBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-            showNotification("AutoFarm", "Выбрано: Martial Artist")
+            martialTextLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
+            equipMartialArtistInGame()
+            showNotification("AutoFarm", "Выбрано и активировано: Martial Artist")
         end
     end)
 
@@ -1284,7 +1364,7 @@ end, true, function(panel)
 
     local btn1 = Instance.new("TextButton") btn1.Size = UDim2.new(0, 32, 0, 24) btn1.Position = UDim2.new(0, 0, 0, 22) btn1.BackgroundColor3 = Color3.fromRGB(255, 120, 0) btn1.Text = "🌸" btn1.TextColor3 = Color3.fromRGB(255, 255, 255) btn1.TextSize = 12 btn1.Font = Enum.Font.GothamBold btn1.ZIndex = 11 btn1.Parent = panel local c1 = Instance.new("UICorner") c1.CornerRadius = UDim.new(0, 6) c1.Parent = btn1
     local btn2 = Instance.new("TextButton") btn2.Size = UDim2.new(0, 32, 0, 24) btn2.Position = UDim2.new(0, 36, 0, 22) btn2.BackgroundColor3 = Color3.fromRGB(50, 28, 14) btn2.Text = "❤️" btn2.TextColor3 = Color3.fromRGB(200, 160, 120) btn2.TextSize = 12 btn2.Font = Enum.Font.GothamBold btn2.ZIndex = 11 btn2.Parent = panel local c2 = Instance.new("UICorner") c2.CornerRadius = UDim.new(0, 6) c2.Parent = btn2
-    local btn3 = Instance.new("TextButton") btn3.Size = UDim2.new(0, 32, 0, 24) btn3.Position = UDim2.new(0, 72, 0, 22) btn3.BackgroundColor3 = Color3.fromRGB(50, 28, 14) btn3.Text = "⭐" btn3.TextColor3 = Color3.fromRGB(200, 160, 120) btn3.TextSize = 12 btn3.Font = Enum.Font.GothamBold btn3.ZIndex = 11 btn2.Parent = panel local c3 = Instance.new("UICorner") c3.CornerRadius = UDim.new(0, 6) c3.Parent = btn3
+    local btn3 = Instance.new("TextButton") btn3.Size = UDim2.new(0, 32, 0, 24) btn3.Position = UDim2.new(0, 72, 0, 22) btn3.BackgroundColor3 = Color3.fromRGB(50, 28, 14) btn3.Text = "⭐" btn3.TextColor3 = Color3.fromRGB(200, 160, 120) btn3.TextSize = 12 btn3.Font = Enum.Font.GothamBold btn3.ZIndex = 11 btn3.Parent = panel local c3 = Instance.new("UICorner") c3.CornerRadius = UDim.new(0, 6) c3.Parent = btn3
     local btn4 = Instance.new("TextButton") btn4.Size = UDim2.new(0, 38, 0, 24) btn4.Position = UDim2.new(0, 108, 0, 22) btn4.BackgroundColor3 = Color3.fromRGB(50, 28, 14) btn4.Text = "🍃" btn4.TextColor3 = Color3.fromRGB(200, 160, 120) btn4.TextSize = 12 btn4.Font = Enum.Font.GothamBold btn4.ZIndex = 11 btn4.Parent = panel local c4 = Instance.new("UICorner") c4.CornerRadius = UDim.new(0, 6) c4.Parent = btn4
     local btn5 = Instance.new("TextButton") btn5.Size = UDim2.new(0, 38, 0, 24) btn5.Position = UDim2.new(0, 150, 0, 22) btn5.BackgroundColor3 = Color3.fromRGB(50, 28, 14) btn5.Text = "❄️" btn5.TextColor3 = Color3.fromRGB(200, 160, 120) btn5.TextSize = 12 btn5.Font = Enum.Font.GothamBold btn5.ZIndex = 11 btn5.Parent = panel local c5 = Instance.new("UICorner") c5.CornerRadius = UDim.new(0, 6) c5.Parent = btn5
 
@@ -1640,6 +1720,114 @@ player.CharacterAdded:Connect(function(char)
             applyCosmicAura(char)
         end)
     end
+end)
+
+-- ВКЛАДКА TELEPORT (ИГРОКИ В СЕТИ + WEAKEST DUMMY)
+local tpHeaderLbl = Instance.new("TextLabel")
+tpHeaderLbl.Size = UDim2.new(1, -10, 0, 20)
+tpHeaderLbl.Position = UDim2.new(0, 0, 0, 0)
+tpHeaderLbl.BackgroundTransparency = 1
+tpHeaderLbl.Font = Enum.Font.GothamBold
+tpHeaderLbl.Text = "Тренировка / NPC:"
+tpHeaderLbl.TextColor3 = Color3.fromRGB(250, 220, 170)
+tpHeaderLbl.TextSize = 11
+tpHeaderLbl.TextXAlignment = Enum.TextXAlignment.Left
+tpHeaderLbl.ZIndex = 3
+tpHeaderLbl.Parent = teleportPage
+
+local dummyTpBtn = Instance.new("TextButton")
+dummyTpBtn.Size = UDim2.new(1, -10, 0, 32)
+dummyTpBtn.Position = UDim2.new(0, 0, 0, 22)
+dummyTpBtn.BackgroundColor3 = Color3.fromRGB(255, 120, 0)
+dummyTpBtn.Text = "ТП к Weakest Dummy"
+dummyTpBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+dummyTpBtn.TextSize = 11
+dummyTpBtn.Font = Enum.Font.GothamBold
+dummyTpBtn.ZIndex = 3
+dummyTpBtn.Parent = teleportPage
+local dtbC = Instance.new("UICorner") dtbC.CornerRadius = UDim.new(0, 6) dtbC.Parent = dummyTpBtn
+
+local function teleportToPosition(pos)
+    pcall(function()
+        local char = player.Character
+        local root = char and char:FindFirstChild("HumanoidRootPart")
+        if root then
+            root.CFrame = CFrame.new(pos + Vector3.new(0, 3, 2))
+        end
+    end)
+end
+
+dummyTpBtn.MouseButton1Click:Connect(function()
+    local liveFolder = Workspace:FindFirstChild("Live")
+    local dummy = liveFolder and liveFolder:FindFirstChild("Weakest Dummy")
+    local dRoot = dummy and (dummy:FindFirstChild("HumanoidRootPart") or dummy:FindFirstChild("Torso"))
+    if dRoot then
+        teleportToPosition(dRoot.Position)
+        showNotification("Teleport", "ТП к Weakest Dummy")
+    else
+        showNotification("Teleport", "Weakest Dummy не найден")
+    end
+end)
+
+local playersHeaderLbl = Instance.new("TextLabel")
+playersHeaderLbl.Size = UDim2.new(1, -10, 0, 20)
+playersHeaderLbl.Position = UDim2.new(0, 0, 0, 62)
+playersHeaderLbl.BackgroundTransparency = 1
+playersHeaderLbl.Font = Enum.Font.GothamBold
+playersHeaderLbl.Text = "Игроки в сети (нажми для ТП):"
+playersHeaderLbl.TextColor3 = Color3.fromRGB(250, 220, 170)
+playersHeaderLbl.TextSize = 11
+playersHeaderLbl.TextXAlignment = Enum.TextXAlignment.Left
+playersHeaderLbl.ZIndex = 3
+playersHeaderLbl.Parent = teleportPage
+
+local tpPlayersList = Instance.new("Frame")
+tpPlayersList.Name = "TPPlayersList"
+tpPlayersList.Size = UDim2.new(1, -10, 0, 240)
+tpPlayersList.Position = UDim2.new(0, 0, 0, 86)
+tpPlayersList.BackgroundTransparency = 1
+tpPlayersList.ZIndex = 3
+tpPlayersList.Parent = teleportPage
+
+refreshTeleportList = function()
+    for _, ch in ipairs(tpPlayersList:GetChildren()) do
+        ch:Destroy()
+    end
+    local yOff = 0
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= player then
+            local pBtn = Instance.new("TextButton")
+            pBtn.Size = UDim2.new(1, 0, 0, 28)
+            pBtn.Position = UDim2.new(0, 0, 0, yOff)
+            pBtn.BackgroundColor3 = Color3.fromRGB(50, 28, 14)
+            pBtn.Text = p.DisplayName .. " (@" .. p.Name .. ")"
+            pBtn.TextColor3 = Color3.fromRGB(255, 220, 170)
+            pBtn.TextSize = 10
+            pBtn.Font = Enum.Font.GothamBold
+            pBtn.ZIndex = 4
+            pBtn.Parent = tpPlayersList
+            local pbC = Instance.new("UICorner") pbC.CornerRadius = UDim.new(0, 6) pbC.Parent = pBtn
+
+            pBtn.MouseButton1Click:Connect(function()
+                local tChar = p.Character
+                local tRoot = tChar and tChar:FindFirstChild("HumanoidRootPart")
+                if tRoot then
+                    teleportToPosition(tRoot.Position)
+                    showNotification("Teleport", "ТП к " .. p.Name)
+                else
+                    showNotification("Teleport", "Игрок недоступен")
+                end
+            end)
+            yOff = yOff + 34
+        end
+    end
+end
+
+Players.PlayerAdded:Connect(function()
+    if teleportPage.Visible then refreshTeleportList() end
+end)
+Players.PlayerRemoving:Connect(function()
+    if teleportPage.Visible then refreshTeleportList() end
 end)
 
 -- КОНТЕЙНЕР ДЛЯ МИРОВЫХ ЧАСТИЦ
