@@ -18,6 +18,10 @@ local playerGui = player:WaitForChild("PlayerGui")
 local camera = Workspace.CurrentCamera
 
 local TEXTURE_ID = "rbxassetid://9343433823"
+local CROSS_TEXTURE_ID = "rbxassetid://87983057610468"
+-- Вставь сюда rbxassetid загруженной в Roblox рамки с 1-го скрина (если не загружена, используется fallback-стиль)
+local NOTIFY_FRAME_ID = ""
+
 local MODULES_ICON = "rbxassetid://82633060732202"
 local SETTINGS_ICON = "rbxassetid://138028255370142"
 local MAIN_ICON = "rbxassetid://14502433595"
@@ -66,7 +70,7 @@ local function playEnableSound()
     end)
 end
 
--- УВЕДОМЛЕНИЕ: ПЛАВНЫЙ КРАСНЫЙ ГРАДИЕНТ И НОВАЯ ИКОНКА СПРАВА
+-- УВЕДОМЛЕНИЕ В СТИЛЕ НЕОНОВОЙ КРАСНОЙ РАМКИ + КРЕСТИК СПРАВА + ЖЁСТКИЙ ОТСТУП ТЕКСТА
 local activeErrorNotification = nil
 
 local function showAbilityErrorNotification(onCompleted)
@@ -84,9 +88,12 @@ local function showAbilityErrorNotification(onCompleted)
         activeErrorNotification = nil
     end
 
+    local width = 320
+    local height = 64
+
     local errContainer = Instance.new("Frame")
-    errContainer.Size = UDim2.new(0, 300, 0, 46)
-    errContainer.Position = UDim2.new(0.5, -150, 1, 70)
+    errContainer.Size = UDim2.new(0, width, 0, height)
+    errContainer.Position = UDim2.new(0.5, -width / 2, 1, 80)
     errContainer.BackgroundTransparency = 1
     errContainer.ZIndex = 800
     errContainer.Parent = screenGui
@@ -94,55 +101,97 @@ local function showAbilityErrorNotification(onCompleted)
 
     local errBg = Instance.new("Frame")
     errBg.Size = UDim2.new(1, 0, 1, 0)
-    errBg.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    errBg.BackgroundTransparency = 0.05
+    errBg.BackgroundColor3 = Color3.fromRGB(22, 6, 8)
+    errBg.BackgroundTransparency = 0.08
     errBg.BorderSizePixel = 0
+    errBg.ClipsDescendants = true
     errBg.ZIndex = 801
     errBg.Parent = errContainer
 
     local errCorner = Instance.new("UICorner")
-    errCorner.CornerRadius = UDim.new(0, 10)
+    errCorner.CornerRadius = UDim.new(0, 8)
     errCorner.Parent = errBg
 
-    -- Плавный градиент (мягкий переход цветов без резких линий)
+    -- Плавная красно-тёмная заливка и диагональный блик как на 1-м скрине
     local errGradient = Instance.new("UIGradient")
     errGradient.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(235, 50, 50)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(110, 10, 10))
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(165, 16, 24)),
+        ColorSequenceKeypoint.new(0.45, Color3.fromRGB(36, 6, 10)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(140, 12, 20))
     })
+    errGradient.Rotation = 25
     errGradient.Parent = errBg
 
-    -- Новая текстура крестика справа
-    local errIcon = Instance.new("ImageLabel")
-    errIcon.Size = UDim2.new(0, 22, 0, 22)
-    errIcon.Position = UDim2.new(1, -32, 0.5, -11)
-    errIcon.BackgroundTransparency = 1
-    errIcon.Image = "rbxassetid://87983057610468"
-    errIcon.ZIndex = 802
-    errIcon.Parent = errBg
+    local diagSheen = Instance.new("Frame")
+    diagSheen.Size = UDim2.new(0.45, 0, 2.2, 0)
+    diagSheen.Position = UDim2.new(0.22, 0, -0.6, 0)
+    diagSheen.Rotation = 28
+    diagSheen.BackgroundColor3 = Color3.fromRGB(255, 45, 65)
+    diagSheen.BackgroundTransparency = 0.86
+    diagSheen.BorderSizePixel = 0
+    diagSheen.ZIndex = 802
+    diagSheen.Parent = errBg
 
-    -- Текст слева с безопасным отступом
+    -- Текстура самой рамки (если задан NOTIFY_FRAME_ID)
+    if NOTIFY_FRAME_ID ~= "" then
+        local frameArt = Instance.new("ImageLabel")
+        frameArt.Size = UDim2.new(1, 0, 1, 0)
+        frameArt.BackgroundTransparency = 1
+        frameArt.Image = NOTIFY_FRAME_ID
+        frameArt.ScaleType = Enum.ScaleType.Stretch
+        frameArt.ZIndex = 803
+        frameArt.Parent = errBg
+    else
+        -- Тонкая неоновая красная окантовка по краям
+        local borderStroke = Instance.new("UIStroke")
+        borderStroke.Color = Color3.fromRGB(255, 38, 52)
+        borderStroke.Thickness = 1.8
+        borderStroke.Transparency = 0.15
+        borderStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+        borderStroke.Parent = errBg
+    end
+
+    -- Контейнер под крестик справа с обрезкой, чтобы текстура крестика не вылезала влево
+    local iconHolder = Instance.new("Frame")
+    iconHolder.Size = UDim2.new(0, 44, 0, 44)
+    iconHolder.Position = UDim2.new(1, -54, 0.5, -22)
+    iconHolder.BackgroundTransparency = 1
+    iconHolder.ClipsDescendants = true
+    iconHolder.ZIndex = 804
+    iconHolder.Parent = errBg
+
+    local errIcon = Instance.new("ImageLabel")
+    errIcon.Size = UDim2.new(0, 34, 0, 34)
+    errIcon.Position = UDim2.new(0.5, -17, 0.5, -17)
+    errIcon.BackgroundTransparency = 1
+    errIcon.Image = CROSS_TEXTURE_ID
+    errIcon.ImageColor3 = Color3.fromRGB(255, 60, 75)
+    errIcon.ScaleType = Enum.ScaleType.Fit
+    errIcon.ZIndex = 805
+    errIcon.Parent = iconHolder
+
+    -- Текст слева: жёстко ограничен по ширине (заканчивается до iconHolder)
     local errLbl = Instance.new("TextLabel")
-    errLbl.Size = UDim2.new(1, -48, 1, 0)
-    errLbl.Position = UDim2.new(0, 16, 0, 0)
+    errLbl.Size = UDim2.new(1, -82, 1, 0)
+    errLbl.Position = UDim2.new(0, 20, 0, 0)
     errLbl.BackgroundTransparency = 1
     errLbl.Font = Enum.Font.GothamBold
     errLbl.Text = "Выберите способность"
-    errLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
+    errLbl.TextColor3 = Color3.fromRGB(255, 245, 245)
     errLbl.TextSize = 12
     errLbl.TextXAlignment = Enum.TextXAlignment.Left
-    errLbl.ZIndex = 802
+    errLbl.TextTruncate = Enum.TextTruncate.AtEnd
+    errLbl.ZIndex = 805
     errLbl.Parent = errBg
 
     TweenService:Create(errContainer, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-        Position = UDim2.new(0.5, -150, 1, -80)
+        Position = UDim2.new(0.5, -width / 2, 1, -92)
     }):Play()
 
     task.delay(2.8, function()
         if errContainer and errContainer.Parent then
             local tw = TweenService:Create(errContainer, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-                Position = UDim2.new(0.5, -150, 1, 70),
-                BackgroundTransparency = 1
+                Position = UDim2.new(0.5, -width / 2, 1, 80)
             })
             tw:Play()
             tw.Completed:Connect(function()
@@ -320,7 +369,7 @@ local visualsIconImg = Instance.new("ImageLabel") visualsIconImg.Size = UDim2.ne
 
 -- СЕКЦИЯ SETTINGS (Language + Configs)
 local settingsIconImg = Instance.new("ImageLabel") settingsIconImg.Size = UDim2.new(0, 14, 0, 14) settingsIconImg.Position = UDim2.new(0, 12, 0, 144) settingsIconImg.BackgroundTransparency = 1 settingsIconImg.Image = SETTINGS_ICON settingsIconImg.ZIndex = 3 settingsIconImg.Parent = sidebar
-local settingsHeader = Instance.new("TextLabel") settingsHeader.Size = UDim2.new(1, -32, 0, 20) settingsHeader.Position = UDim2.new(0, 34, 0, 141) settingsHeader.BackgroundTransparency = 1 settingsHeader.Font = Enum.Font.GothamBold settingsHeader.Text = "Settings" settingsHeader.TextColor3 = Color3.fromRGB(210, 150, 90) settingsHeader.TextSize = 11 settingsHeader.TextXAlignment = Enum.TextXAlignment.Left settingsHeader.ZIndex = 3 settingsHeader.Parent = sidebar
+local settingsHeader = Instance.new("TextLabel") settingsHeader.Size = UDim2.new(1, -32, 0, 20) settingsHeader.Position = UDim2.new(0, 34, 0, 141) settingsHeader.BackgroundTransparency = 1 settingsHeader.Font = Enum.Font.GothamBold settingsHeader.Text = "Settings" settingsHeader.TextColor3 = Color3.fromRGB(210, 150, 90) settingsHeader.TextSize = 11 modulesHeader.TextXAlignment = Enum.TextXAlignment.Left settingsHeader.ZIndex = 3 settingsHeader.Parent = sidebar
 
 local languageTabBtn = Instance.new("TextButton")
 languageTabBtn.Size = UDim2.new(1, -20, 0, 26)
@@ -1235,7 +1284,7 @@ end, true, function(panel)
 
     local btn1 = Instance.new("TextButton") btn1.Size = UDim2.new(0, 32, 0, 24) btn1.Position = UDim2.new(0, 0, 0, 22) btn1.BackgroundColor3 = Color3.fromRGB(255, 120, 0) btn1.Text = "🌸" btn1.TextColor3 = Color3.fromRGB(255, 255, 255) btn1.TextSize = 12 btn1.Font = Enum.Font.GothamBold btn1.ZIndex = 11 btn1.Parent = panel local c1 = Instance.new("UICorner") c1.CornerRadius = UDim.new(0, 6) c1.Parent = btn1
     local btn2 = Instance.new("TextButton") btn2.Size = UDim2.new(0, 32, 0, 24) btn2.Position = UDim2.new(0, 36, 0, 22) btn2.BackgroundColor3 = Color3.fromRGB(50, 28, 14) btn2.Text = "❤️" btn2.TextColor3 = Color3.fromRGB(200, 160, 120) btn2.TextSize = 12 btn2.Font = Enum.Font.GothamBold btn2.ZIndex = 11 btn2.Parent = panel local c2 = Instance.new("UICorner") c2.CornerRadius = UDim.new(0, 6) c2.Parent = btn2
-    local btn3 = Instance.new("TextButton") btn3.Size = UDim2.new(0, 32, 0, 24) btn3.Position = UDim2.new(0, 72, 0, 22) btn3.BackgroundColor3 = Color3.fromRGB(50, 28, 14) btn3.Text = "⭐" btn3.TextColor3 = Color3.fromRGB(200, 160, 120) btn3.TextSize = 12 btn3.Font = Enum.Font.GothamBold btn3.ZIndex = 11 btn3.Parent = panel local c3 = Instance.new("UICorner") c3.CornerRadius = UDim.new(0, 6) c3.Parent = btn3
+    local btn3 = Instance.new("TextButton") btn3.Size = UDim2.new(0, 32, 0, 24) btn3.Position = UDim2.new(0, 72, 0, 22) btn3.BackgroundColor3 = Color3.fromRGB(50, 28, 14) btn3.Text = "⭐" btn3.TextColor3 = Color3.fromRGB(200, 160, 120) btn3.TextSize = 12 btn3.Font = Enum.Font.GothamBold btn3.ZIndex = 11 btn2.Parent = panel local c3 = Instance.new("UICorner") c3.CornerRadius = UDim.new(0, 6) c3.Parent = btn3
     local btn4 = Instance.new("TextButton") btn4.Size = UDim2.new(0, 38, 0, 24) btn4.Position = UDim2.new(0, 108, 0, 22) btn4.BackgroundColor3 = Color3.fromRGB(50, 28, 14) btn4.Text = "🍃" btn4.TextColor3 = Color3.fromRGB(200, 160, 120) btn4.TextSize = 12 btn4.Font = Enum.Font.GothamBold btn4.ZIndex = 11 btn4.Parent = panel local c4 = Instance.new("UICorner") c4.CornerRadius = UDim.new(0, 6) c4.Parent = btn4
     local btn5 = Instance.new("TextButton") btn5.Size = UDim2.new(0, 38, 0, 24) btn5.Position = UDim2.new(0, 150, 0, 22) btn5.BackgroundColor3 = Color3.fromRGB(50, 28, 14) btn5.Text = "❄️" btn5.TextColor3 = Color3.fromRGB(200, 160, 120) btn5.TextSize = 12 btn5.Font = Enum.Font.GothamBold btn5.ZIndex = 11 btn5.Parent = panel local c5 = Instance.new("UICorner") c5.CornerRadius = UDim.new(0, 6) c5.Parent = btn5
 
