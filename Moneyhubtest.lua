@@ -25,7 +25,7 @@ local MODULES_ICON = "rbxassetid://82633060732202"
 local SETTINGS_ICON = "rbxassetid://138028255370142"
 local MAIN_ICON = "rbxassetid://14502433595"
 local VISUALS_ICON = "rbxassetid://11322089611"
-local TELEPORT_ICON = "rbxassetid://14502433595"
+local TELEPORT_ICON = "rbxassetid://6723742952"
 local LANGUAGE_ICON = "rbxassetid://84460102482950"
 local CONFIGS_ICON = "rbxassetid://90837140373377"
 local GEAR_ICON = "rbxassetid://6953984741"
@@ -2057,7 +2057,6 @@ local function applyAngelWings(char)
             feather.Massless = true
             feather.Parent = parentJoint
 
-            -- Лёгкое серебристо-золотистое свечение пера
             local fLight = Instance.new("SurfaceLight")
             fLight.Color = Color3.fromRGB(250, 242, 210)
             fLight.Brightness = 0.65
@@ -2122,8 +2121,7 @@ local function applyAngelWings(char)
             end
             animTime += dt
 
-            -- Плавное раскрытие/складывание + взмахи вверх и вниз
-            local unfold = (math.sin(animTime * 1.15) + 1) * 0.5 -- 0 (сложено) -> 1 (раскрыто)
+            local unfold = (math.sin(animTime * 1.15) + 1) * 0.5
             local flapWave = math.sin(animTime * 3.1)
             local yawSpread = math.rad(14 + unfold * 42) + (flapWave * math.rad(12))
             local flapRoll = flapWave * math.rad(14)
@@ -2180,13 +2178,30 @@ local dummyTpBtn = Instance.new("TextButton")
 dummyTpBtn.Size = UDim2.new(1, -10, 0, 32)
 dummyTpBtn.Position = UDim2.new(0, 0, 0, 22)
 dummyTpBtn.BackgroundColor3 = Color3.fromRGB(255, 120, 0)
-dummyTpBtn.Text = "ТП к Weakest Dummy"
-dummyTpBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-dummyTpBtn.TextSize = 11
-dummyTpBtn.Font = Enum.Font.GothamBold
+dummyTpBtn.Text = ""
 dummyTpBtn.ZIndex = 3
 dummyTpBtn.Parent = teleportPage
 local dtbC = Instance.new("UICorner") dtbC.CornerRadius = UDim.new(0, 6) dtbC.Parent = dummyTpBtn
+
+local dummyTpIcon = Instance.new("ImageLabel")
+dummyTpIcon.Size = UDim2.new(0, 16, 0, 16)
+dummyTpIcon.Position = UDim2.new(0, 10, 0.5, -8)
+dummyTpIcon.BackgroundTransparency = 1
+dummyTpIcon.Image = TELEPORT_ICON
+dummyTpIcon.ZIndex = 4
+dummyTpIcon.Parent = dummyTpBtn
+
+local dummyTpLbl = Instance.new("TextLabel")
+dummyTpLbl.Size = UDim2.new(1, -34, 1, 0)
+dummyTpLbl.Position = UDim2.new(0, 32, 0, 0)
+dummyTpLbl.BackgroundTransparency = 1
+dummyTpLbl.Text = "ТП к Weakest Dummy"
+dummyTpLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
+dummyTpLbl.TextSize = 11
+dummyTpLbl.Font = Enum.Font.GothamBold
+dummyTpLbl.TextXAlignment = Enum.TextXAlignment.Left
+dummyTpLbl.ZIndex = 4
+dummyTpLbl.Parent = dummyTpBtn
 
 local function teleportToPosition(pos)
     pcall(function()
@@ -2241,13 +2256,30 @@ refreshTeleportList = function()
             pBtn.Size = UDim2.new(1, 0, 0, 28)
             pBtn.Position = UDim2.new(0, 0, 0, yOff)
             pBtn.BackgroundColor3 = Color3.fromRGB(50, 28, 14)
-            pBtn.Text = p.DisplayName .. " (@" .. p.Name .. ")"
-            pBtn.TextColor3 = Color3.fromRGB(255, 220, 170)
-            pBtn.TextSize = 10
-            pBtn.Font = Enum.Font.GothamBold
+            pBtn.Text = ""
             pBtn.ZIndex = 4
             pBtn.Parent = tpPlayersList
             local pbC = Instance.new("UICorner") pbC.CornerRadius = UDim.new(0, 6) pbC.Parent = pBtn
+
+            local pIc = Instance.new("ImageLabel")
+            pIc.Size = UDim2.new(0, 15, 0, 15)
+            pIc.Position = UDim2.new(0, 10, 0.5, -7.5)
+            pIc.BackgroundTransparency = 1
+            pIc.Image = TELEPORT_ICON
+            pIc.ZIndex = 5
+            pIc.Parent = pBtn
+
+            local pLbl = Instance.new("TextLabel")
+            pLbl.Size = UDim2.new(1, -34, 1, 0)
+            pLbl.Position = UDim2.new(0, 32, 0, 0)
+            pLbl.BackgroundTransparency = 1
+            pLbl.Text = p.DisplayName .. " (@" .. p.Name .. ")"
+            pLbl.TextColor3 = Color3.fromRGB(255, 220, 170)
+            pLbl.TextSize = 10
+            pLbl.Font = Enum.Font.GothamBold
+            pLbl.TextXAlignment = Enum.TextXAlignment.Left
+            pLbl.ZIndex = 5
+            pLbl.Parent = pBtn
 
             pBtn.MouseButton1Click:Connect(function()
                 local tChar = p.Character
