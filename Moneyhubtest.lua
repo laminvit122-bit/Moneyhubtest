@@ -36,20 +36,6 @@ local DELETE_ICON = "rbxassetid://11768918600"
 
 local SAFE_COORDS = Vector3.new(-200.7, 675.7, 357.3)
 
--- Цветовая схема: глубокий чёрный + насыщенный красный + неон
-local THEME = {
-    BgDark = Color3.fromRGB(10, 8, 10),
-    BgCard = Color3.fromRGB(18, 11, 13),
-    BgElevated = Color3.fromRGB(26, 13, 16),
-    AccentRed = Color3.fromRGB(225, 24, 42),
-    NeonRed = Color3.fromRGB(255, 42, 62),
-    DeepCrimson = Color3.fromRGB(95, 10, 18),
-    TextPrimary = Color3.fromRGB(255, 244, 246),
-    TextSecondary = Color3.fromRGB(195, 145, 152),
-    TextMuted = Color3.fromRGB(138, 96, 102),
-    StrokeRed = Color3.fromRGB(255, 36, 56),
-}
-
 if playerGui:FindFirstChild("MoneyHubGui") then
     playerGui.MoneyHubGui:Destroy()
 end
@@ -71,16 +57,6 @@ pcall(function()
 end)
 if not screenGui.Parent then screenGui.Parent = playerGui end
 
-local function addNeonStroke(instance, thickness, transparency, color)
-    local stroke = Instance.new("UIStroke")
-    stroke.Thickness = thickness or 1.2
-    stroke.Transparency = transparency or 0.25
-    stroke.Color = color or THEME.StrokeRed
-    stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-    stroke.Parent = instance
-    return stroke
-end
-
 local function playEnableSound()
     pcall(function()
         local sound = Instance.new("Sound")
@@ -94,7 +70,7 @@ local function playEnableSound()
     end)
 end
 
--- УВЕДОМЛЕНИЕ О ВЫБОРЕ СПОСОБНОСТИ
+-- КРАСНОЕ НЕОНОВОЕ УВЕДОМЛЕНИЕ ПРИ ОТСУТСТВИИ СПОСОБНОСТИ
 local activeErrorNotification = nil
 
 local function showAbilityErrorNotification(onCompleted)
@@ -125,25 +101,35 @@ local function showAbilityErrorNotification(onCompleted)
 
     local errBg = Instance.new("Frame")
     errBg.Size = UDim2.new(1, 0, 1, 0)
-    errBg.BackgroundColor3 = Color3.fromRGB(16, 6, 8)
-    errBg.BackgroundTransparency = 0.05
+    errBg.BackgroundColor3 = Color3.fromRGB(22, 6, 8)
+    errBg.BackgroundTransparency = 0.08
     errBg.BorderSizePixel = 0
     errBg.ClipsDescendants = true
     errBg.ZIndex = 801
     errBg.Parent = errContainer
 
     local errCorner = Instance.new("UICorner")
-    errCorner.CornerRadius = UDim.new(0, 10)
+    errCorner.CornerRadius = UDim.new(0, 8)
     errCorner.Parent = errBg
 
     local errGradient = Instance.new("UIGradient")
     errGradient.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(145, 12, 22)),
-        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(22, 7, 10)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(130, 10, 18))
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(165, 16, 24)),
+        ColorSequenceKeypoint.new(0.45, Color3.fromRGB(36, 6, 10)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(140, 12, 20))
     })
-    errGradient.Rotation = 22
+    errGradient.Rotation = 25
     errGradient.Parent = errBg
+
+    local diagSheen = Instance.new("Frame")
+    diagSheen.Size = UDim2.new(0.45, 0, 2.2, 0)
+    diagSheen.Position = UDim2.new(0.22, 0, -0.6, 0)
+    diagSheen.Rotation = 28
+    diagSheen.BackgroundColor3 = Color3.fromRGB(255, 45, 65)
+    diagSheen.BackgroundTransparency = 0.86
+    diagSheen.BorderSizePixel = 0
+    diagSheen.ZIndex = 802
+    diagSheen.Parent = errBg
 
     if NOTIFY_FRAME_ID ~= "" then
         local frameArt = Instance.new("ImageLabel")
@@ -154,34 +140,39 @@ local function showAbilityErrorNotification(onCompleted)
         frameArt.ZIndex = 803
         frameArt.Parent = errBg
     else
-        addNeonStroke(errBg, 1.6, 0.1, THEME.NeonRed)
+        local borderStroke = Instance.new("UIStroke")
+        borderStroke.Color = Color3.fromRGB(255, 38, 52)
+        borderStroke.Thickness = 1.8
+        borderStroke.Transparency = 0.15
+        borderStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+        borderStroke.Parent = errBg
     end
 
     local iconHolder = Instance.new("Frame")
-    iconHolder.Size = UDim2.new(0, 40, 0, 40)
-    iconHolder.Position = UDim2.new(1, -50, 0.5, -20)
+    iconHolder.Size = UDim2.new(0, 44, 0, 44)
+    iconHolder.Position = UDim2.new(1, -54, 0.5, -22)
     iconHolder.BackgroundTransparency = 1
     iconHolder.ClipsDescendants = true
     iconHolder.ZIndex = 804
     iconHolder.Parent = errBg
 
     local errIcon = Instance.new("ImageLabel")
-    errIcon.Size = UDim2.new(0, 30, 0, 30)
-    errIcon.Position = UDim2.new(0.5, -15, 0.5, -15)
+    errIcon.Size = UDim2.new(0, 34, 0, 34)
+    errIcon.Position = UDim2.new(0.5, -17, 0.5, -17)
     errIcon.BackgroundTransparency = 1
     errIcon.Image = CROSS_TEXTURE_ID
-    errIcon.ImageColor3 = THEME.NeonRed
+    errIcon.ImageColor3 = Color3.fromRGB(255, 60, 75)
     errIcon.ScaleType = Enum.ScaleType.Fit
     errIcon.ZIndex = 805
     errIcon.Parent = iconHolder
 
     local errLbl = Instance.new("TextLabel")
-    errLbl.Size = UDim2.new(1, -78, 1, 0)
-    errLbl.Position = UDim2.new(0, 18, 0, 0)
+    errLbl.Size = UDim2.new(1, -82, 1, 0)
+    errLbl.Position = UDim2.new(0, 20, 0, 0)
     errLbl.BackgroundTransparency = 1
     errLbl.Font = Enum.Font.GothamBold
     errLbl.Text = "Выберите способность"
-    errLbl.TextColor3 = THEME.TextPrimary
+    errLbl.TextColor3 = Color3.fromRGB(255, 245, 245)
     errLbl.TextSize = 12
     errLbl.TextXAlignment = Enum.TextXAlignment.Left
     errLbl.TextTruncate = Enum.TextTruncate.AtEnd
@@ -209,11 +200,11 @@ local function showAbilityErrorNotification(onCompleted)
     end)
 end
 
--- СТАНДАРТНЫЕ УВЕДОМЛЕНИЯ
+-- СТАНДАРТНЫЕ УВЕДОМЛЕНИЯ (ТЁПЛЫЙ ОРАНЖЕВО-КОРИЧНЕВЫЙ СТИЛЬ)
 local notificationsContainer = Instance.new("Frame")
 notificationsContainer.Name = "NotificationsContainer"
 notificationsContainer.Size = UDim2.new(0, 240, 1, 0)
-notificationsContainer.Position = UDim2.new(1, -252, 0, 0)
+notificationsContainer.Position = UDim2.new(1, -250, 0, 0)
 notificationsContainer.BackgroundTransparency = 1
 notificationsContainer.ZIndex = 500
 notificationsContainer.Parent = screenGui
@@ -222,37 +213,35 @@ local activeNotifications = 0
 
 local function showNotification(title, stateText)
     activeNotifications = activeNotifications + 1
-    local yPos = -(activeNotifications * 56)
+    local yPos = -(activeNotifications * 55)
 
     local notifFrame = Instance.new("Frame")
-    notifFrame.Size = UDim2.new(1, 0, 0, 46)
+    notifFrame.Size = UDim2.new(1, 0, 0, 45)
     notifFrame.Position = UDim2.new(1, 50, 1, yPos - 10)
-    notifFrame.BackgroundColor3 = THEME.BgElevated
-    notifFrame.BackgroundTransparency = 0.06
+    notifFrame.BackgroundColor3 = Color3.fromRGB(45, 26, 13)
+    notifFrame.BackgroundTransparency = 0.1
     notifFrame.BorderSizePixel = 0
     notifFrame.ZIndex = 501
     notifFrame.Parent = notificationsContainer
 
-    local nCorner = Instance.new("UICorner") nCorner.CornerRadius = UDim.new(0, 9) nCorner.Parent = notifFrame
-    addNeonStroke(notifFrame, 1.1, 0.35, THEME.AccentRed)
+    local nCorner = Instance.new("UICorner") nCorner.CornerRadius = UDim.new(0, 8) nCorner.Parent = notifFrame
 
     local titleLbl = Instance.new("TextLabel")
-    titleLbl.Size = UDim2.new(1, -16, 0, 22)
+    titleLbl.Size = UDim2.new(1, -15, 0, 22)
     titleLbl.Position = UDim2.new(0, 10, 0, 4)
     titleLbl.BackgroundTransparency = 1
     titleLbl.Font = Enum.Font.GothamBold
     titleLbl.Text = title .. ": " .. stateText
-    titleLbl.TextColor3 = THEME.TextPrimary
+    titleLbl.TextColor3 = Color3.fromRGB(255, 200, 120)
     titleLbl.TextSize = 11
     titleLbl.TextXAlignment = Enum.TextXAlignment.Left
-    titleLbl.TextTruncate = Enum.TextTruncate.AtEnd
     titleLbl.ZIndex = 502
     titleLbl.Parent = notifFrame
 
     local lineBg = Instance.new("Frame")
     lineBg.Size = UDim2.new(1, -20, 0, 3)
     lineBg.Position = UDim2.new(0, 10, 1, -8)
-    lineBg.BackgroundColor3 = Color3.fromRGB(45, 14, 18)
+    lineBg.BackgroundColor3 = Color3.fromRGB(60, 35, 18)
     lineBg.BorderSizePixel = 0
     lineBg.ZIndex = 502
     lineBg.Parent = notifFrame
@@ -261,7 +250,7 @@ local function showNotification(title, stateText)
     local lineFill = Instance.new("Frame")
     lineFill.Size = UDim2.new(1, 0, 1, 0)
     lineFill.Position = UDim2.new(0, 0, 0, 0)
-    lineFill.BackgroundColor3 = THEME.NeonRed
+    lineFill.BackgroundColor3 = Color3.fromRGB(255, 120, 0)
     lineFill.BorderSizePixel = 0
     lineFill.ZIndex = 503
     lineFill.Parent = lineBg
@@ -278,7 +267,7 @@ local function showNotification(title, stateText)
     end)
 end
 
--- ГЛАВНОЕ ОКНО (ЧЁРНО-КРАСНЫЙ НЕОНОВЫЙ КЛИЕНТ)
+-- ГЛАВНОЕ ОКНО (ИСХОДНЫЙ КОРИЧНЕВО-ОРАНЖЕВЫЙ ЦВЕТ)
 local targetPosition = UDim2.new(0.5, -320, 0.5, -205)
 local hiddenPosition = UDim2.new(0.5, -320, 0.5, 380)
 
@@ -286,23 +275,13 @@ local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
 mainFrame.Size = UDim2.new(0, 640, 0, 410)
 mainFrame.Position = hiddenPosition
-mainFrame.BackgroundColor3 = THEME.BgDark
-mainFrame.BackgroundTransparency = 0.03
+mainFrame.BackgroundColor3 = Color3.fromRGB(38, 24, 12)
+mainFrame.BackgroundTransparency = 0.05
 mainFrame.BorderSizePixel = 0
 mainFrame.ClipsDescendants = true
 mainFrame.Parent = screenGui
 
 local mainCorner = Instance.new("UICorner") mainCorner.CornerRadius = UDim.new(0, 14) mainCorner.Parent = mainFrame
-addNeonStroke(mainFrame, 1.5, 0.18, THEME.NeonRed)
-
-local mainGrad = Instance.new("UIGradient")
-mainGrad.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(26, 9, 13)),
-    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(10, 8, 10)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(22, 8, 11))
-})
-mainGrad.Rotation = 35
-mainGrad.Parent = mainFrame
 
 local effectsContainer = Instance.new("Frame")
 effectsContainer.Name = "EffectsContainer"
@@ -321,255 +300,220 @@ contentContainer.Parent = mainFrame
 -- Боковая панель
 local sidebar = Instance.new("Frame")
 sidebar.Name = "Sidebar"
-sidebar.Size = UDim2.new(0, 164, 1, -20)
+sidebar.Size = UDim2.new(0, 160, 1, -20)
 sidebar.Position = UDim2.new(0, 10, 0, 10)
-sidebar.BackgroundColor3 = THEME.BgCard
-sidebar.BackgroundTransparency = 0.15
+sidebar.BackgroundColor3 = Color3.fromRGB(54, 34, 18)
+sidebar.BackgroundTransparency = 0.3
 sidebar.BorderSizePixel = 0
 sidebar.ZIndex = 2
 sidebar.Parent = contentContainer
 
-local sidebarCorner = Instance.new("UICorner") sidebarCorner.CornerRadius = UDim.new(0, 11) sidebarCorner.Parent = sidebar
-addNeonStroke(sidebar, 1, 0.45, THEME.AccentRed)
+local sidebarCorner = Instance.new("UICorner") sidebarCorner.CornerRadius = UDim.new(0, 10) sidebarCorner.Parent = sidebar
 
-local logoTexture = Instance.new("ImageLabel")
-logoTexture.Size = UDim2.new(0, 22, 0, 22)
-logoTexture.Position = UDim2.new(0, 10, 0, 15)
-logoTexture.BackgroundTransparency = 1
-logoTexture.Image = TEXTURE_ID
-logoTexture.ZIndex = 3
-logoTexture.Parent = sidebar
-
-local logoLabel = Instance.new("TextLabel")
-logoLabel.Size = UDim2.new(1, -40, 0, 20)
-logoLabel.Position = UDim2.new(0, 38, 0, 10)
-logoLabel.BackgroundTransparency = 1
-logoLabel.Font = Enum.Font.GothamBold
-logoLabel.Text = "MONEYHUB"
-logoLabel.TextColor3 = THEME.NeonRed
-logoLabel.TextSize = 14
-logoLabel.TextXAlignment = Enum.TextXAlignment.Left
-logoLabel.ZIndex = 3
-logoLabel.Parent = sidebar
+local logoTexture = Instance.new("ImageLabel") logoTexture.Size = UDim2.new(0, 20, 0, 20) logoTexture.Position = UDim2.new(0, 10, 0, 17) logoTexture.BackgroundTransparency = 1 logoTexture.Image = TEXTURE_ID logoTexture.ZIndex = 3 logoTexture.Parent = sidebar
+local logoLabel = Instance.new("TextLabel") logoLabel.Size = UDim2.new(1, -38, 0, 20) logoLabel.Position = UDim2.new(0, 34, 0, 10) logoLabel.BackgroundTransparency = 1 logoLabel.Font = Enum.Font.GothamBold logoLabel.Text = "MONEYHUB" logoLabel.TextColor3 = Color3.fromRGB(255, 195, 80) logoLabel.TextSize = 14 logoLabel.TextXAlignment = Enum.TextXAlignment.Left logoLabel.ZIndex = 3 logoLabel.Parent = sidebar
 
 local versionLabel = Instance.new("TextLabel")
 versionLabel.Name = "VersionLabel"
-versionLabel.Size = UDim2.new(1, -40, 0, 16)
-versionLabel.Position = UDim2.new(0, 38, 0, 28)
+versionLabel.Size = UDim2.new(1, -38, 0, 16)
+versionLabel.Position = UDim2.new(0, 34, 0, 28)
 versionLabel.BackgroundTransparency = 1
 versionLabel.Font = Enum.Font.GothamBold
-versionLabel.Text = "v0.1 • CRIMSON"
-versionLabel.TextColor3 = THEME.TextMuted
+versionLabel.Text = "v0.1"
+versionLabel.TextColor3 = Color3.fromRGB(180, 130, 80)
 versionLabel.TextSize = 10
 versionLabel.TextXAlignment = Enum.TextXAlignment.Left
 versionLabel.ZIndex = 3
 versionLabel.Parent = sidebar
 
-local function createNavButton(text, iconId, yPos, activeDefault)
-    local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(1, -18, 0, 27)
-    btn.Position = UDim2.new(0, 9, 0, yPos)
-    btn.BackgroundColor3 = activeDefault and THEME.DeepCrimson or THEME.BgElevated
-    btn.BackgroundTransparency = activeDefault and 0.15 or 0.45
-    btn.Text = ""
-    btn.AutoButtonColor = false
-    btn.ZIndex = 3
-    btn.Parent = sidebar
+-- СЕКЦИЯ MODULES (Main + Visuals + Teleport)
+local modulesIconImg = Instance.new("ImageLabel") modulesIconImg.Size = UDim2.new(0, 14, 0, 14) modulesIconImg.Position = UDim2.new(0, 12, 0, 55) modulesIconImg.BackgroundTransparency = 1 modulesIconImg.Image = MODULES_ICON modulesIconImg.ZIndex = 3 modulesIconImg.Parent = sidebar
+local modulesHeader = Instance.new("TextLabel") modulesHeader.Size = UDim2.new(0, 100, 0, 20) modulesHeader.Position = UDim2.new(0, 32, 0, 52) modulesHeader.BackgroundTransparency = 1 modulesHeader.Font = Enum.Font.GothamBold modulesHeader.Text = "Modules" modulesHeader.TextColor3 = Color3.fromRGB(210, 150, 90) modulesHeader.TextSize = 11 modulesHeader.TextXAlignment = Enum.TextXAlignment.Left modulesHeader.ZIndex = 3 modulesHeader.Parent = sidebar
 
-    local c = Instance.new("UICorner") c.CornerRadius = UDim.new(0, 7) c.Parent = btn
-    local stroke = addNeonStroke(btn, 1, activeDefault and 0.25 or 0.75, THEME.NeonRed)
+local mainTabBtn = Instance.new("TextButton")
+mainTabBtn.Size = UDim2.new(1, -20, 0, 26)
+mainTabBtn.Position = UDim2.new(0, 10, 0, 75)
+mainTabBtn.BackgroundColor3 = Color3.fromRGB(85, 50, 22)
+mainTabBtn.BackgroundTransparency = 0.2
+mainTabBtn.Text = "             Main"
+mainTabBtn.TextColor3 = Color3.fromRGB(255, 225, 180)
+mainTabBtn.TextSize = 11
+mainTabBtn.Font = Enum.Font.GothamMedium
+mainTabBtn.TextXAlignment = Enum.TextXAlignment.Left
+mainTabBtn.ZIndex = 3
+mainTabBtn.Parent = sidebar
 
-    local ic = Instance.new("ImageLabel")
-    ic.Size = UDim2.new(0, 14, 0, 14)
-    ic.Position = UDim2.new(0, 10, 0.5, -7)
-    ic.BackgroundTransparency = 1
-    ic.Image = iconId
-    ic.ImageColor3 = activeDefault and THEME.NeonRed or THEME.TextSecondary
-    ic.ZIndex = 4
-    ic.Parent = btn
+local mainTabCorner = Instance.new("UICorner") mainTabCorner.CornerRadius = UDim.new(0, 6) mainTabCorner.Parent = mainTabBtn
+local mainIconImg = Instance.new("ImageLabel") mainIconImg.Size = UDim2.new(0, 14, 0, 14) mainIconImg.Position = UDim2.new(0, 12, 0, 6) mainIconImg.BackgroundTransparency = 1 mainIconImg.Image = MAIN_ICON mainIconImg.ZIndex = 4 mainIconImg.Parent = mainTabBtn
 
-    local lbl = Instance.new("TextLabel")
-    lbl.Size = UDim2.new(1, -34, 1, 0)
-    lbl.Position = UDim2.new(0, 30, 0, 0)
-    lbl.BackgroundTransparency = 1
-    lbl.Text = text
-    lbl.TextColor3 = activeDefault and THEME.TextPrimary or THEME.TextSecondary
-    lbl.TextSize = 11
-    lbl.Font = Enum.Font.GothamBold
-    lbl.TextXAlignment = Enum.TextXAlignment.Left
-    lbl.TextTruncate = Enum.TextTruncate.AtEnd
-    lbl.ZIndex = 4
-    lbl.Parent = btn
+local visualsTabBtn = Instance.new("TextButton")
+visualsTabBtn.Size = UDim2.new(1, -20, 0, 26)
+visualsTabBtn.Position = UDim2.new(0, 10, 0, 105)
+visualsTabBtn.BackgroundColor3 = Color3.fromRGB(54, 34, 18)
+visualsTabBtn.BackgroundTransparency = 0.5
+visualsTabBtn.Text = "             Visuals"
+visualsTabBtn.TextColor3 = Color3.fromRGB(200, 160, 120)
+visualsTabBtn.TextSize = 11
+visualsTabBtn.Font = Enum.Font.GothamMedium
+visualsTabBtn.TextXAlignment = Enum.TextXAlignment.Left
+visualsTabBtn.ZIndex = 3
+visualsTabBtn.Parent = sidebar
 
-    return btn, lbl, ic, stroke
-end
+local visualsTabCorner = Instance.new("UICorner") visualsTabCorner.CornerRadius = UDim.new(0, 6) visualsTabCorner.Parent = visualsTabBtn
+local visualsIconImg = Instance.new("ImageLabel") visualsIconImg.Size = UDim2.new(0, 14, 0, 14) visualsIconImg.Position = UDim2.new(0, 12, 0, 6) visualsIconImg.BackgroundTransparency = 1 visualsIconImg.Image = VISUALS_ICON visualsIconImg.ZIndex = 4 visualsIconImg.Parent = visualsTabBtn
 
--- СЕКЦИЯ MODULES
-local modulesIconImg = Instance.new("ImageLabel")
-modulesIconImg.Size = UDim2.new(0, 13, 0, 13)
-modulesIconImg.Position = UDim2.new(0, 12, 0, 55)
-modulesIconImg.BackgroundTransparency = 1
-modulesIconImg.Image = MODULES_ICON
-modulesIconImg.ImageColor3 = THEME.NeonRed
-modulesIconImg.ZIndex = 3
-modulesIconImg.Parent = sidebar
+local teleportTabBtn = Instance.new("TextButton")
+teleportTabBtn.Size = UDim2.new(1, -20, 0, 26)
+teleportTabBtn.Position = UDim2.new(0, 10, 0, 135)
+teleportTabBtn.BackgroundColor3 = Color3.fromRGB(54, 34, 18)
+teleportTabBtn.BackgroundTransparency = 0.5
+teleportTabBtn.Text = "             Teleport"
+teleportTabBtn.TextColor3 = Color3.fromRGB(200, 160, 120)
+teleportTabBtn.TextSize = 11
+teleportTabBtn.Font = Enum.Font.GothamMedium
+teleportTabBtn.TextXAlignment = Enum.TextXAlignment.Left
+teleportTabBtn.ZIndex = 3
+teleportTabBtn.Parent = sidebar
 
-local modulesHeader = Instance.new("TextLabel")
-modulesHeader.Size = UDim2.new(1, -34, 0, 18)
-modulesHeader.Position = UDim2.new(0, 30, 0, 53)
-modulesHeader.BackgroundTransparency = 1
-modulesHeader.Font = Enum.Font.GothamBold
-modulesHeader.Text = "Modules"
-modulesHeader.TextColor3 = THEME.TextSecondary
-modulesHeader.TextSize = 11
-modulesHeader.TextXAlignment = Enum.TextXAlignment.Left
-modulesHeader.ZIndex = 3
-modulesHeader.Parent = sidebar
+local teleportTabCorner = Instance.new("UICorner") teleportTabCorner.CornerRadius = UDim.new(0, 6) teleportTabCorner.Parent = teleportTabBtn
+local teleportIconImg = Instance.new("ImageLabel") teleportIconImg.Size = UDim2.new(0, 14, 0, 14) teleportIconImg.Position = UDim2.new(0, 12, 0, 6) teleportIconImg.BackgroundTransparency = 1 teleportIconImg.Image = TELEPORT_ICON teleportIconImg.ZIndex = 4 teleportIconImg.Parent = teleportTabBtn
 
-local mainTabBtn, mainTabLbl, mainTabIc, mainTabStroke = createNavButton("Main", MAIN_ICON, 75, true)
-local visualsTabBtn, visualsTabLbl, visualsTabIc, visualsTabStroke = createNavButton("Visuals", VISUALS_ICON, 106, false)
-local teleportTabBtn, teleportTabLbl, teleportTabIc, teleportTabStroke = createNavButton("Teleport", TELEPORT_ICON, 137, false)
+-- СЕКЦИЯ SETTINGS (Language + Configs) — выровнено по левому краю
+local settingsIconImg = Instance.new("ImageLabel") settingsIconImg.Size = UDim2.new(0, 14, 0, 14) settingsIconImg.Position = UDim2.new(0, 12, 0, 174) settingsIconImg.BackgroundTransparency = 1 settingsIconImg.Image = SETTINGS_ICON settingsIconImg.ZIndex = 3 settingsIconImg.Parent = sidebar
+local settingsHeader = Instance.new("TextLabel") settingsHeader.Size = UDim2.new(0, 100, 0, 20) settingsHeader.Position = UDim2.new(0, 32, 0, 171) settingsHeader.BackgroundTransparency = 1 settingsHeader.Font = Enum.Font.GothamBold settingsHeader.Text = "Settings" settingsHeader.TextColor3 = Color3.fromRGB(210, 150, 90) settingsHeader.TextSize = 11 settingsHeader.TextXAlignment = Enum.TextXAlignment.Left settingsHeader.ZIndex = 3 settingsHeader.Parent = sidebar
 
--- СЕКЦИЯ SETTINGS
-local settingsIconImg = Instance.new("ImageLabel")
-settingsIconImg.Size = UDim2.new(0, 13, 0, 13)
-settingsIconImg.Position = UDim2.new(0, 12, 0, 175)
-settingsIconImg.BackgroundTransparency = 1
-settingsIconImg.Image = SETTINGS_ICON
-settingsIconImg.ImageColor3 = THEME.NeonRed
-settingsIconImg.ZIndex = 3
-settingsIconImg.Parent = sidebar
+local languageTabBtn = Instance.new("TextButton")
+languageTabBtn.Size = UDim2.new(1, -20, 0, 26)
+languageTabBtn.Position = UDim2.new(0, 10, 0, 195)
+languageTabBtn.BackgroundColor3 = Color3.fromRGB(54, 34, 18)
+languageTabBtn.BackgroundTransparency = 0.5
+languageTabBtn.Text = "             Language"
+languageTabBtn.TextColor3 = Color3.fromRGB(200, 160, 120)
+languageTabBtn.TextSize = 11
+languageTabBtn.Font = Enum.Font.GothamMedium
+languageTabBtn.TextXAlignment = Enum.TextXAlignment.Left
+languageTabBtn.ZIndex = 3
+languageTabBtn.Parent = sidebar
 
-local settingsHeader = Instance.new("TextLabel")
-settingsHeader.Size = UDim2.new(1, -34, 0, 18)
-settingsHeader.Position = UDim2.new(0, 30, 0, 173)
-settingsHeader.BackgroundTransparency = 1
-settingsHeader.Font = Enum.Font.GothamBold
-settingsHeader.Text = "Settings"
-settingsHeader.TextColor3 = THEME.TextSecondary
-settingsHeader.TextSize = 11
-settingsHeader.TextXAlignment = Enum.TextXAlignment.Left
-settingsHeader.ZIndex = 3
-settingsHeader.Parent = sidebar
+local languageTabCorner = Instance.new("UICorner") languageTabCorner.CornerRadius = UDim.new(0, 6) languageTabCorner.Parent = languageTabBtn
+local languageIconImg = Instance.new("ImageLabel") languageIconImg.Size = UDim2.new(0, 14, 0, 14) languageIconImg.Position = UDim2.new(0, 12, 0, 6) languageIconImg.BackgroundTransparency = 1 languageIconImg.Image = LANGUAGE_ICON languageIconImg.ZIndex = 4 languageIconImg.Parent = languageTabBtn
 
-local languageTabBtn, languageTabLbl, languageTabIc, languageTabStroke = createNavButton("Language", LANGUAGE_ICON, 195, false)
-local configTabBtn, configTabLbl, configTabIc, configTabStroke = createNavButton("Configs", CONFIGS_ICON, 226, false)
+local configTabBtn = Instance.new("TextButton")
+configTabBtn.Size = UDim2.new(1, -20, 0, 26)
+configTabBtn.Position = UDim2.new(0, 10, 0, 225)
+configTabBtn.BackgroundColor3 = Color3.fromRGB(54, 34, 18)
+configTabBtn.BackgroundTransparency = 0.5
+configTabBtn.Text = "             Configs"
+configTabBtn.TextColor3 = Color3.fromRGB(200, 160, 120)
+configTabBtn.TextSize = 11
+configTabBtn.Font = Enum.Font.GothamMedium
+configTabBtn.TextXAlignment = Enum.TextXAlignment.Left
+configTabBtn.ZIndex = 3
+configTabBtn.Parent = sidebar
+
+local configTabCorner = Instance.new("UICorner") configTabCorner.CornerRadius = UDim.new(0, 6) configTabCorner.Parent = configTabBtn
+local configIconImg = Instance.new("ImageLabel") configIconImg.Size = UDim2.new(0, 14, 0, 14) configIconImg.Position = UDim2.new(0, 12, 0, 6) configIconImg.BackgroundTransparency = 1 configIconImg.Image = CONFIGS_ICON configIconImg.ZIndex = 4 configIconImg.Parent = configTabBtn
 
 -- Верхняя панель
 local topBarArea = Instance.new("Frame")
 topBarArea.Name = "TopBarArea"
-topBarArea.Size = UDim2.new(1, -194, 0, 44)
-topBarArea.Position = UDim2.new(0, 182, 0, 10)
+topBarArea.Size = UDim2.new(1, -190, 0, 45)
+topBarArea.Position = UDim2.new(0, 175, 0, 10)
 topBarArea.BackgroundTransparency = 1
 topBarArea.ZIndex = 2
 topBarArea.Parent = contentContainer
 
 local searchBar = Instance.new("Frame")
-searchBar.Size = UDim2.new(0, 195, 0, 30)
+searchBar.Size = UDim2.new(0, 190, 0, 30)
 searchBar.Position = UDim2.new(0, 0, 0, 5)
-searchBar.BackgroundColor3 = THEME.BgCard
-searchBar.BackgroundTransparency = 0.15
+searchBar.BackgroundColor3 = Color3.fromRGB(54, 34, 18)
+searchBar.BackgroundTransparency = 0.3
 searchBar.ZIndex = 2
 searchBar.Parent = topBarArea
 
 local searchCorner = Instance.new("UICorner") searchCorner.CornerRadius = UDim.new(0, 8) searchCorner.Parent = searchBar
-addNeonStroke(searchBar, 1, 0.45, THEME.AccentRed)
-
-local searchIcon = Instance.new("TextLabel")
-searchIcon.Size = UDim2.new(0, 24, 1, 0)
-searchIcon.Position = UDim2.new(0, 6, 0, 0)
-searchIcon.BackgroundTransparency = 1
-searchIcon.Text = "🔍"
-searchIcon.TextColor3 = THEME.NeonRed
-searchIcon.TextSize = 12
-searchIcon.ZIndex = 3
-searchIcon.Parent = searchBar
+local searchIcon = Instance.new("TextLabel") searchIcon.Size = UDim2.new(0, 25, 1, 0) searchIcon.Position = UDim2.new(0, 8, 0, 0) searchIcon.BackgroundTransparency = 1 searchIcon.Text = "🔍" searchIcon.TextColor3 = Color3.fromRGB(200, 140, 70) searchIcon.TextSize = 12 searchIcon.ZIndex = 3 searchIcon.Parent = searchBar
 
 local searchInput = Instance.new("TextBox")
-searchInput.Size = UDim2.new(1, -34, 1, 0)
+searchInput.Size = UDim2.new(1, -35, 1, 0)
 searchInput.Position = UDim2.new(0, 30, 0, 0)
 searchInput.BackgroundTransparency = 1
 searchInput.PlaceholderText = "Поиск..."
-searchInput.PlaceholderColor3 = THEME.TextMuted
+searchInput.PlaceholderColor3 = Color3.fromRGB(170, 120, 70)
 searchInput.Text = ""
-searchInput.TextColor3 = THEME.TextPrimary
+searchInput.TextColor3 = Color3.fromRGB(250, 220, 170)
 searchInput.TextSize = 12
 searchInput.Font = Enum.Font.Gotham
-searchInput.TextXAlignment = Enum.TextXAlignment.Left
 searchInput.ZIndex = 3
 searchInput.Parent = searchBar
 
 local profileFrame = Instance.new("Frame")
-profileFrame.Size = UDim2.new(0, 145, 0, 30)
-profileFrame.Position = UDim2.new(1, -216, 0, 5)
+profileFrame.Size = UDim2.new(0, 140, 0, 30)
+profileFrame.Position = UDim2.new(1, -210, 0, 5)
 profileFrame.BackgroundTransparency = 1
 profileFrame.ZIndex = 5
 profileFrame.Parent = topBarArea
 
 local profileName = Instance.new("TextLabel")
-profileName.Size = UDim2.new(1, -34, 1, 0)
+profileName.Size = UDim2.new(1, -35, 1, 0)
 profileName.Position = UDim2.new(0, 0, 0, 0)
 profileName.BackgroundTransparency = 1
 profileName.Font = Enum.Font.GothamBold
 profileName.Text = player.DisplayName
-profileName.TextColor3 = THEME.TextPrimary
+profileName.TextColor3 = Color3.fromRGB(250, 220, 170)
 profileName.TextSize = 11
 profileName.TextXAlignment = Enum.TextXAlignment.Right
-profileName.TextTruncate = Enum.TextTruncate.AtEnd
 profileName.ZIndex = 6
 profileName.Parent = profileFrame
 
 local profileAvatar = Instance.new("ImageLabel")
 profileAvatar.Size = UDim2.new(0, 24, 0, 24)
 profileAvatar.Position = UDim2.new(1, -26, 0, 3)
-profileAvatar.BackgroundColor3 = THEME.BgElevated
+profileAvatar.BackgroundColor3 = Color3.fromRGB(60, 35, 18)
 profileAvatar.BorderSizePixel = 0
 profileAvatar.Image = "rbxthumb://type=AvatarHeadShot&id=" .. player.UserId .. "&w=150&h=150"
 profileAvatar.ZIndex = 6
 profileAvatar.Parent = profileFrame
 
 local avatarCorner = Instance.new("UICorner") avatarCorner.CornerRadius = UDim.new(1, 0) avatarCorner.Parent = profileAvatar
-addNeonStroke(profileAvatar, 1, 0.3, THEME.NeonRed)
 
 local minBtn = Instance.new("TextButton")
 minBtn.Name = "MinimizeButton"
-minBtn.Size = UDim2.new(0, 26, 0, 26)
-minBtn.Position = UDim2.new(1, -64, 0, 7)
-minBtn.BackgroundColor3 = THEME.BgElevated
-minBtn.BackgroundTransparency = 0.15
+minBtn.Size = UDim2.new(0, 24, 0, 24)
+minBtn.Position = UDim2.new(1, -65, 0, 8)
+minBtn.BackgroundColor3 = Color3.fromRGB(65, 38, 20)
+minBtn.BackgroundTransparency = 0.3
 minBtn.Text = "−"
-minBtn.TextColor3 = THEME.TextPrimary
+minBtn.TextColor3 = Color3.fromRGB(230, 190, 140)
 minBtn.TextSize = 14
 minBtn.Font = Enum.Font.GothamBold
 minBtn.ZIndex = 10
 minBtn.Parent = topBarArea
 
-local minCorner = Instance.new("UICorner") minCorner.CornerRadius = UDim.new(0, 7) minCorner.Parent = minBtn
-addNeonStroke(minBtn, 1, 0.45, THEME.AccentRed)
+local minCorner = Instance.new("UICorner") minCorner.CornerRadius = UDim.new(0, 6) minCorner.Parent = minBtn
 
 local closeBtn = Instance.new("TextButton")
 closeBtn.Name = "CloseButton"
-closeBtn.Size = UDim2.new(0, 26, 0, 26)
-closeBtn.Position = UDim2.new(1, -32, 0, 7)
-closeBtn.BackgroundColor3 = THEME.DeepCrimson
-closeBtn.BackgroundTransparency = 0.15
+closeBtn.Size = UDim2.new(0, 24, 0, 24)
+closeBtn.Position = UDim2.new(1, -35, 0, 8)
+closeBtn.BackgroundColor3 = Color3.fromRGB(85, 35, 20)
+closeBtn.BackgroundTransparency = 0.3
 closeBtn.Text = "×"
-closeBtn.TextColor3 = THEME.NeonRed
+closeBtn.TextColor3 = Color3.fromRGB(255, 150, 120)
 closeBtn.TextSize = 16
 closeBtn.Font = Enum.Font.GothamBold
 closeBtn.ZIndex = 10
 closeBtn.Parent = topBarArea
 
-local closeCorner = Instance.new("UICorner") closeCorner.CornerRadius = UDim.new(0, 7) closeCorner.Parent = closeBtn
-addNeonStroke(closeBtn, 1, 0.25, THEME.NeonRed)
+local closeCorner = Instance.new("UICorner") closeCorner.CornerRadius = UDim.new(0, 6) closeCorner.Parent = closeBtn
 
 local sectionTitle = Instance.new("TextLabel")
-sectionTitle.Size = UDim2.new(1, -194, 0, 20)
-sectionTitle.Position = UDim2.new(0, 182, 0, 52)
+sectionTitle.Size = UDim2.new(1, -190, 0, 20)
+sectionTitle.Position = UDim2.new(0, 175, 0, 52)
 sectionTitle.BackgroundTransparency = 1
 sectionTitle.Font = Enum.Font.GothamBold
 sectionTitle.Text = "Modules / Main"
-sectionTitle.TextColor3 = THEME.NeonRed
+sectionTitle.TextColor3 = Color3.fromRGB(190, 135, 75)
 sectionTitle.TextSize = 12
 sectionTitle.TextXAlignment = Enum.TextXAlignment.Left
 sectionTitle.ZIndex = 2
@@ -578,13 +522,12 @@ sectionTitle.Parent = contentContainer
 -- Страницы
 local mainPage = Instance.new("ScrollingFrame")
 mainPage.Name = "MainPage"
-mainPage.Size = UDim2.new(1, -194, 1, -88)
-mainPage.Position = UDim2.new(0, 182, 0, 76)
+mainPage.Size = UDim2.new(1, -190, 1, -90)
+mainPage.Position = UDim2.new(0, 175, 0, 78)
 mainPage.BackgroundTransparency = 1
 mainPage.CanvasSize = UDim2.new(0, 0, 0, 0)
 mainPage.AutomaticCanvasSize = Enum.AutomaticSize.Y
-mainPage.ScrollBarThickness = 3
-mainPage.ScrollBarImageColor3 = THEME.NeonRed
+mainPage.ScrollBarThickness = 4
 mainPage.Visible = true
 mainPage.ZIndex = 2
 mainPage.Parent = contentContainer
@@ -595,19 +538,18 @@ mainLayout.Padding = UDim.new(0, 10)
 mainLayout.Parent = mainPage
 
 local mainPadding = Instance.new("UIPadding")
-mainPadding.PaddingBottom = UDim.new(0, 28)
-mainPadding.PaddingRight = UDim.new(0, 6)
+mainPadding.PaddingBottom = UDim.new(0, 30)
+mainPadding.PaddingRight = UDim.new(0, 5)
 mainPadding.Parent = mainPage
 
 local visualsPage = Instance.new("ScrollingFrame")
 visualsPage.Name = "VisualsPage"
-visualsPage.Size = UDim2.new(1, -194, 1, -88)
-visualsPage.Position = UDim2.new(0, 182, 0, 76)
+visualsPage.Size = UDim2.new(1, -190, 1, -90)
+visualsPage.Position = UDim2.new(0, 175, 0, 78)
 visualsPage.BackgroundTransparency = 1
 visualsPage.CanvasSize = UDim2.new(0, 0, 0, 0)
 visualsPage.AutomaticCanvasSize = Enum.AutomaticSize.Y
-visualsPage.ScrollBarThickness = 3
-visualsPage.ScrollBarImageColor3 = THEME.NeonRed
+visualsPage.ScrollBarThickness = 4
 visualsPage.Visible = false
 visualsPage.ZIndex = 2
 visualsPage.Parent = contentContainer
@@ -618,56 +560,45 @@ visualsLayout.Padding = UDim.new(0, 10)
 visualsLayout.Parent = visualsPage
 
 local visualsPadding = Instance.new("UIPadding")
-visualsPadding.PaddingBottom = UDim.new(0, 28)
-visualsPadding.PaddingRight = UDim.new(0, 6)
+visualsPadding.PaddingBottom = UDim.new(0, 30)
+visualsPadding.PaddingRight = UDim.new(0, 5)
 visualsPadding.Parent = visualsPage
 
 local teleportPage = Instance.new("ScrollingFrame")
 teleportPage.Name = "TeleportPage"
-teleportPage.Size = UDim2.new(1, -194, 1, -88)
-teleportPage.Position = UDim2.new(0, 182, 0, 76)
+teleportPage.Size = UDim2.new(1, -190, 1, -90)
+teleportPage.Position = UDim2.new(0, 175, 0, 78)
 teleportPage.BackgroundTransparency = 1
 teleportPage.CanvasSize = UDim2.new(0, 0, 0, 0)
 teleportPage.AutomaticCanvasSize = Enum.AutomaticSize.Y
-teleportPage.ScrollBarThickness = 3
-teleportPage.ScrollBarImageColor3 = THEME.NeonRed
+teleportPage.ScrollBarThickness = 4
 teleportPage.Visible = false
 teleportPage.ZIndex = 2
 teleportPage.Parent = contentContainer
 
 local languagePage = Instance.new("ScrollingFrame")
 languagePage.Name = "LanguagePage"
-languagePage.Size = UDim2.new(1, -194, 1, -88)
-languagePage.Position = UDim2.new(0, 182, 0, 76)
+languagePage.Size = UDim2.new(1, -190, 1, -90)
+languagePage.Position = UDim2.new(0, 175, 0, 78)
 languagePage.BackgroundTransparency = 1
 languagePage.CanvasSize = UDim2.new(0, 0, 0, 300)
 languagePage.ScrollBarThickness = 3
-languagePage.ScrollBarImageColor3 = THEME.NeonRed
 languagePage.Visible = false
 languagePage.ZIndex = 2
 languagePage.Parent = contentContainer
 
 local configPage = Instance.new("ScrollingFrame")
 configPage.Name = "ConfigPage"
-configPage.Size = UDim2.new(1, -194, 1, -88)
-configPage.Position = UDim2.new(0, 182, 0, 76)
+configPage.Size = UDim2.new(1, -190, 1, -90)
+configPage.Position = UDim2.new(0, 175, 0, 78)
 configPage.BackgroundTransparency = 1
 configPage.CanvasSize = UDim2.new(0, 0, 0, 300)
 configPage.ScrollBarThickness = 3
-configPage.ScrollBarImageColor3 = THEME.NeonRed
 configPage.Visible = false
 configPage.ZIndex = 2
 configPage.Parent = contentContainer
 
 local refreshTeleportList
-
-local navItems = {
-    {name = "Main", btn = mainTabBtn, lbl = mainTabLbl, ic = mainTabIc, st = mainTabStroke, title = "Modules / Main"},
-    {name = "Visuals", btn = visualsTabBtn, lbl = visualsTabLbl, ic = visualsTabIc, st = visualsTabStroke, title = "Modules / Visuals"},
-    {name = "Teleport", btn = teleportTabBtn, lbl = teleportTabLbl, ic = teleportTabIc, st = teleportTabStroke, title = "Modules / Teleport"},
-    {name = "Language", btn = languageTabBtn, lbl = languageTabLbl, ic = languageTabIc, st = languageTabStroke, title = "Settings / Language"},
-    {name = "Configs", btn = configTabBtn, lbl = configTabLbl, ic = configTabIc, st = configTabStroke, title = "Settings / Configs"},
-}
 
 local function switchTab(tabName)
     mainPage.Visible = (tabName == "Main")
@@ -676,21 +607,33 @@ local function switchTab(tabName)
     languagePage.Visible = (tabName == "Language")
     configPage.Visible = (tabName == "Configs")
 
-    if tabName == "Teleport" and refreshTeleportList then
-        refreshTeleportList()
+    if tabName == "Main" then
+        sectionTitle.Text = "Modules / Main"
+    elseif tabName == "Visuals" then
+        sectionTitle.Text = "Modules / Visuals"
+    elseif tabName == "Teleport" then
+        sectionTitle.Text = "Modules / Teleport"
+        if refreshTeleportList then refreshTeleportList() end
+    elseif tabName == "Language" then
+        sectionTitle.Text = "Settings / Language"
+    elseif tabName == "Configs" then
+        sectionTitle.Text = "Settings / Configs"
     end
 
-    for _, item in ipairs(navItems) do
-        local isAct = (item.name == tabName)
-        if isAct then
-            sectionTitle.Text = item.title
-        end
-        item.btn.BackgroundColor3 = isAct and THEME.DeepCrimson or THEME.BgElevated
-        item.btn.BackgroundTransparency = isAct and 0.15 or 0.45
-        item.lbl.TextColor3 = isAct and THEME.TextPrimary or THEME.TextSecondary
-        item.ic.ImageColor3 = isAct and THEME.NeonRed or THEME.TextSecondary
-        item.st.Transparency = isAct and 0.25 or 0.75
-    end
+    mainTabBtn.BackgroundColor3 = (tabName == "Main") and Color3.fromRGB(85, 50, 22) or Color3.fromRGB(54, 34, 18)
+    mainTabBtn.TextColor3 = (tabName == "Main") and Color3.fromRGB(255, 225, 180) or Color3.fromRGB(200, 160, 120)
+
+    visualsTabBtn.BackgroundColor3 = (tabName == "Visuals") and Color3.fromRGB(85, 50, 22) or Color3.fromRGB(54, 34, 18)
+    visualsTabBtn.TextColor3 = (tabName == "Visuals") and Color3.fromRGB(255, 225, 180) or Color3.fromRGB(200, 160, 120)
+
+    teleportTabBtn.BackgroundColor3 = (tabName == "Teleport") and Color3.fromRGB(85, 50, 22) or Color3.fromRGB(54, 34, 18)
+    teleportTabBtn.TextColor3 = (tabName == "Teleport") and Color3.fromRGB(255, 225, 180) or Color3.fromRGB(200, 160, 120)
+
+    languageTabBtn.BackgroundColor3 = (tabName == "Language") and Color3.fromRGB(85, 50, 22) or Color3.fromRGB(54, 34, 18)
+    languageTabBtn.TextColor3 = (tabName == "Language") and Color3.fromRGB(255, 225, 180) or Color3.fromRGB(200, 160, 120)
+
+    configTabBtn.BackgroundColor3 = (tabName == "Configs") and Color3.fromRGB(85, 50, 22) or Color3.fromRGB(54, 34, 18)
+    configTabBtn.TextColor3 = (tabName == "Configs") and Color3.fromRGB(255, 225, 180) or Color3.fromRGB(200, 160, 120)
 end
 
 mainTabBtn.MouseButton1Click:Connect(function() switchTab("Main") end)
@@ -721,7 +664,8 @@ local fullbrightEnabled = false
 local scriptVisualsEnabled = false
 local worldVisualsEnabled = false
 local auraEnabled = false
-local selectedAuraMode = "Noob" -- "Noob" (Нуб-аура) или "Premium" (Премиум)
+local selectedAuraMode = "Noob" -- "Noob" ("Нуб-аура") или "Fire" ("Огневая аура")
+local angelWingsEnabled = false
 
 local currentParticleType = "🌸"
 local worldParticleType = "🌸"
@@ -739,6 +683,7 @@ local setFullbrightUIState = nil
 local setScriptVisualsUIState = nil
 local setWorldVisualsUIState = nil
 local setAuraUIState = nil
+local setAngelWingsUIState = nil
 
 local updateAimButtonsVisual = nil
 local setAimSliderValue = nil
@@ -750,40 +695,57 @@ local function equipMartialArtistInGame()
     pcall(function()
         local charData = playerGui:FindFirstChild("CharacterData")
         if not charData then return end
-        local innerCharData = charData:FindFirstChild("Character Data")
-        local bg = innerCharData and innerCharData:FindFirstChild("Bg")
-        local scroll = bg and bg:FindFirstChild("ScrollingFrame")
-        local martialEntry = scroll and scroll:FindFirstChild("MARTIAL ARTIST")
-        if not martialEntry then return end
 
-        local candidates = {}
-        if martialEntry:IsA("GuiButton") then
-            table.insert(candidates, martialEntry)
+        local firedAny = false
+
+        local function triggerButton(btn)
+            if not btn or not btn.Parent then return end
+            local center = btn.AbsolutePosition + (btn.AbsoluteSize * 0.5)
+            if firesignal then
+                pcall(function() firesignal(btn.MouseEnter) end)
+                pcall(function() firesignal(btn.MouseButton1Down) end)
+                pcall(function() firesignal(btn.MouseButton1Up) end)
+                pcall(function() firesignal(btn.MouseButton1Click) end)
+                pcall(function() firesignal(btn.Activated) end)
+            end
+            pcall(function()
+                VirtualInputManager:SendMouseMoveEvent(center.X, center.Y, game)
+                task.wait(0.02)
+                VirtualInputManager:SendMouseButtonEvent(center.X, center.Y, 0, true, game, 1)
+                task.wait(0.03)
+                VirtualInputManager:SendMouseButtonEvent(center.X, center.Y, 0, false, game, 1)
+            end)
+            pcall(function() btn:Activate() end)
+            firedAny = true
         end
-        for _, desc in ipairs(martialEntry:GetDescendants()) do
-            if desc:IsA("GuiButton") then
-                table.insert(candidates, desc)
+
+        for _, desc in ipairs(charData:GetDescendants()) do
+            local nLower = desc.Name:lower()
+            local txtLower = (desc:IsA("TextLabel") or desc:IsA("TextButton")) and desc.Text:lower() or ""
+            if nLower:find("martial") or txtLower:find("martial artist") then
+                if desc:IsA("GuiButton") then
+                    triggerButton(desc)
+                elseif desc.Parent and desc.Parent:IsA("GuiButton") then
+                    triggerButton(desc.Parent)
+                else
+                    for _, sub in ipairs(desc:GetDescendants()) do
+                        if sub:IsA("GuiButton") then
+                            triggerButton(sub)
+                        end
+                    end
+                end
             end
         end
 
-        for _, btn in ipairs(candidates) do
-            if btn.Visible then
-                local center = btn.AbsolutePosition + (btn.AbsoluteSize * 0.5)
-                if firesignal then
-                    pcall(function() firesignal(btn.MouseEnter) end)
-                    pcall(function() firesignal(btn.MouseButton1Down) end)
-                    pcall(function() firesignal(btn.MouseButton1Up) end)
-                    pcall(function() firesignal(btn.MouseButton1Click) end)
-                    pcall(function() firesignal(btn.Activated) end)
+        if not firedAny then
+            for _, desc in ipairs(charData:GetDescendants()) do
+                if desc:IsA("GuiButton") then
+                    local t = (desc:IsA("TextButton") and desc.Text:lower()) or ""
+                    local n = desc.Name:lower()
+                    if t:find("equip") or t:find("select") or n:find("equip") or n:find("select") then
+                        triggerButton(desc)
+                    end
                 end
-                pcall(function()
-                    VirtualInputManager:SendMouseMoveEvent(center.X, center.Y, game)
-                    task.wait(0.02)
-                    VirtualInputManager:SendMouseButtonEvent(center.X, center.Y, 0, true, game, 1)
-                    task.wait(0.03)
-                    VirtualInputManager:SendMouseButtonEvent(center.X, center.Y, 0, false, game, 1)
-                end)
-                pcall(function() btn:Activate() end)
             end
         end
     end)
@@ -804,38 +766,36 @@ local function createModuleCard(parent, title, descRu, descEn, callbackToggle, h
 
     local card = Instance.new("Frame")
     card.Name = "ModuleCard"
-    card.Size = UDim2.new(0, 220, 0, 70)
-    card.BackgroundColor3 = THEME.BgCard
-    card.BackgroundTransparency = 0.12
+    card.Size = UDim2.new(0, 215, 0, 70)
+    card.BackgroundColor3 = Color3.fromRGB(58, 36, 20)
+    card.BackgroundTransparency = 0.2
     card.BorderSizePixel = 0
     card.ZIndex = 2
     card.LayoutOrder = cardOrderIndex
     card.Parent = parent
 
     local corner = Instance.new("UICorner") corner.CornerRadius = UDim.new(0, 10) corner.Parent = card
-    addNeonStroke(card, 1, 0.45, THEME.AccentRed)
 
     local tLbl = Instance.new("TextLabel")
     tLbl.Name = "TitleLabel"
-    tLbl.Size = UDim2.new(0, 118, 0, 20)
-    tLbl.Position = UDim2.new(0, 12, 0, 9)
+    tLbl.Size = UDim2.new(0, 110, 0, 20)
+    tLbl.Position = UDim2.new(0, 12, 0, 10)
     tLbl.BackgroundTransparency = 1
     tLbl.Font = Enum.Font.GothamBold
     tLbl.Text = title
-    tLbl.TextColor3 = THEME.TextPrimary
+    tLbl.TextColor3 = Color3.fromRGB(250, 220, 170)
     tLbl.TextSize = 13
     tLbl.TextXAlignment = Enum.TextXAlignment.Left
-    tLbl.TextTruncate = Enum.TextTruncate.AtEnd
     tLbl.ZIndex = 3
     tLbl.Parent = card
 
     local dLbl = Instance.new("TextLabel")
-    dLbl.Size = UDim2.new(1, -22, 0, 28)
-    dLbl.Position = UDim2.new(0, 12, 0, 34)
+    dLbl.Size = UDim2.new(1, -20, 0, 28)
+    dLbl.Position = UDim2.new(0, 12, 0, 36)
     dLbl.BackgroundTransparency = 1
     dLbl.Font = Enum.Font.Gotham
     dLbl.Text = (currentLanguage == "RU") and descRu or descEn
-    dLbl.TextColor3 = THEME.TextSecondary
+    dLbl.TextColor3 = Color3.fromRGB(180, 130, 80)
     dLbl.TextSize = 10
     dLbl.TextWrapped = true
     dLbl.TextXAlignment = Enum.TextXAlignment.Left
@@ -845,29 +805,18 @@ local function createModuleCard(parent, title, descRu, descEn, callbackToggle, h
     table.insert(translatableCards, {lbl = dLbl, ru = descRu, en = descEn})
 
     local toggleFrame = Instance.new("Frame")
-    toggleFrame.Size = UDim2.new(0, 36, 0, 18)
-    toggleFrame.Position = UDim2.new(1, -44, 0, 10)
-    toggleFrame.BackgroundColor3 = Color3.fromRGB(36, 14, 18)
+    toggleFrame.Size = UDim2.new(0, 34, 0, 18)
+    toggleFrame.Position = UDim2.new(1, -42, 0, 11)
+    toggleFrame.BackgroundColor3 = Color3.fromRGB(40, 24, 15)
     toggleFrame.BorderSizePixel = 0
     toggleFrame.ZIndex = 3
     toggleFrame.Parent = card
 
     local tCorner = Instance.new("UICorner") tCorner.CornerRadius = UDim.new(1, 0) tCorner.Parent = toggleFrame
-    local toggleDot = Instance.new("Frame")
-    toggleDot.Size = UDim2.new(0, 14, 0, 14)
-    toggleDot.Position = UDim2.new(0, 2, 0, 2)
-    toggleDot.BackgroundColor3 = THEME.TextMuted
-    toggleDot.BorderSizePixel = 0
-    toggleDot.ZIndex = 4
-    toggleDot.Parent = toggleFrame
+    local toggleDot = Instance.new("Frame") toggleDot.Size = UDim2.new(0, 14, 0, 14) toggleDot.Position = UDim2.new(0, 2, 0, 2) toggleDot.BackgroundColor3 = Color3.fromRGB(150, 115, 80) toggleDot.BorderSizePixel = 0 toggleDot.ZIndex = 4 toggleDot.Parent = toggleFrame
     local dCorner = Instance.new("UICorner") dCorner.CornerRadius = UDim.new(1, 0) dCorner.Parent = toggleDot
 
-    local clickBtn = Instance.new("TextButton")
-    clickBtn.Size = UDim2.new(1, 0, 1, 0)
-    clickBtn.BackgroundTransparency = 1
-    clickBtn.Text = ""
-    clickBtn.ZIndex = 5
-    clickBtn.Parent = card
+    local clickBtn = Instance.new("TextButton") clickBtn.Size = UDim2.new(1, 0, 1, 0) clickBtn.BackgroundTransparency = 1 clickBtn.Text = "" clickBtn.ZIndex = 5 clickBtn.Parent = card
 
     local isEnabled = false
     local settingsPanelRef = nil
@@ -877,7 +826,7 @@ local function createModuleCard(parent, title, descRu, descEn, callbackToggle, h
             showAbilityErrorNotification(function()
                 if settingsPanelRef and not settingsPanelRef.Visible then
                     settingsPanelRef.Visible = true
-                    TweenService:Create(card, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(0, 220, 0, expandedH)}):Play()
+                    TweenService:Create(card, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(0, 215, 0, expandedH)}):Play()
                 end
             end)
             return
@@ -886,16 +835,18 @@ local function createModuleCard(parent, title, descRu, descEn, callbackToggle, h
         isEnabled = val
         if isEnabled then
             if title == "AutoFarm" and selectedStyle == "MartialArtist" then
-                equipMartialArtistInGame()
-                task.wait(0.15)
-                equipMartialArtistInGame()
+                task.spawn(function()
+                    equipMartialArtistInGame()
+                    task.wait(0.25)
+                    equipMartialArtistInGame()
+                end)
             end
-            TweenService:Create(toggleFrame, TweenInfo.new(0.2), {BackgroundColor3 = THEME.NeonRed}):Play()
+            TweenService:Create(toggleFrame, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(255, 120, 0)}):Play()
             TweenService:Create(toggleDot, TweenInfo.new(0.2), {Position = UDim2.new(1, -16, 0, 2), BackgroundColor3 = Color3.fromRGB(255, 255, 255)}):Play()
             playEnableSound()
         else
-            TweenService:Create(toggleFrame, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(36, 14, 18)}):Play()
-            TweenService:Create(toggleDot, TweenInfo.new(0.2), {Position = UDim2.new(0, 2, 0, 2), BackgroundColor3 = THEME.TextMuted}):Play()
+            TweenService:Create(toggleFrame, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(40, 24, 15)}):Play()
+            TweenService:Create(toggleDot, TweenInfo.new(0.2), {Position = UDim2.new(0, 2, 0, 2), BackgroundColor3 = Color3.fromRGB(150, 115, 80)}):Play()
         end
         if callbackToggle then callbackToggle(isEnabled) end
         if not noNotify then
@@ -911,16 +862,15 @@ local function createModuleCard(parent, title, descRu, descEn, callbackToggle, h
     if hasSettings then
         local settingsBtn = Instance.new("ImageButton")
         settingsBtn.Size = UDim2.new(0, 16, 0, 16)
-        settingsBtn.Position = UDim2.new(1, -66, 0, 11)
+        settingsBtn.Position = UDim2.new(1, -64, 0, 12)
         settingsBtn.BackgroundTransparency = 1
         settingsBtn.Image = GEAR_ICON
-        settingsBtn.ImageColor3 = THEME.TextSecondary
         settingsBtn.ZIndex = 5
         settingsBtn.Parent = card
 
         local settingsPanel = Instance.new("Frame")
         settingsPanel.Size = UDim2.new(1, -20, 0, expandedH - 72)
-        settingsPanel.Position = UDim2.new(0, 10, 0, 66)
+        settingsPanel.Position = UDim2.new(0, 10, 0, 68)
         settingsPanel.BackgroundTransparency = 1
         settingsPanel.Visible = false
         settingsPanel.ZIndex = 10
@@ -934,9 +884,8 @@ local function createModuleCard(parent, title, descRu, descEn, callbackToggle, h
         settingsBtn.MouseButton1Click:Connect(function()
             local isOpen = not settingsPanel.Visible
             settingsPanel.Visible = isOpen
-            settingsBtn.ImageColor3 = isOpen and THEME.NeonRed or THEME.TextSecondary
             local targetH = isOpen and expandedH or 70
-            TweenService:Create(card, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(0, 220, 0, targetH)}):Play()
+            TweenService:Create(card, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(0, 215, 0, targetH)}):Play()
         end)
     end
 
@@ -958,9 +907,9 @@ searchInput:GetPropertyChangedSignal("Text"):Connect(function()
     end
 end)
 
--- 1. AutoFarm (расширенная высота под способность + 3 настройки)
+-- 1. AutoFarm
 local setAutoFarmUIFunc
-_, setAutoFarmUIFunc = createModuleCard(mainPage, "AutoFarm", "Обычные удары, способности и ульта", "Normal attacks, skills and ultimate", function(state)
+_, setAutoFarmUIFunc = createModuleCard(mainPage, "AutoFarm", "Обычные удары, способности и ульта", "Обычные удары, способности и ульта", function(state)
     autoFarmEnabled = state
 end, true, function(panel)
     local styleLbl = Instance.new("TextLabel")
@@ -969,7 +918,7 @@ end, true, function(panel)
     styleLbl.BackgroundTransparency = 1
     styleLbl.Font = Enum.Font.GothamBold
     styleLbl.Text = "Выберите способность:"
-    styleLbl.TextColor3 = THEME.TextPrimary
+    styleLbl.TextColor3 = Color3.fromRGB(250, 220, 170)
     styleLbl.TextSize = 10
     styleLbl.TextXAlignment = Enum.TextXAlignment.Left
     styleLbl.ZIndex = 11
@@ -978,16 +927,15 @@ end, true, function(panel)
     local martialBtn = Instance.new("TextButton")
     martialBtn.Size = UDim2.new(1, 0, 0, 25)
     martialBtn.Position = UDim2.new(0, 0, 0, 17)
-    martialBtn.BackgroundColor3 = THEME.BgElevated
+    martialBtn.BackgroundColor3 = Color3.fromRGB(50, 28, 14)
     martialBtn.Text = ""
     martialBtn.ZIndex = 11
     martialBtn.Parent = panel
     local mbC = Instance.new("UICorner") mbC.CornerRadius = UDim.new(0, 6) mbC.Parent = martialBtn
-    local mbStroke = addNeonStroke(martialBtn, 1, 0.5, THEME.AccentRed)
 
     local martialIcon = Instance.new("ImageLabel")
-    martialIcon.Size = UDim2.new(0, 15, 0, 15)
-    martialIcon.Position = UDim2.new(0, 7, 0.5, -7.5)
+    martialIcon.Size = UDim2.new(0, 16, 0, 16)
+    martialIcon.Position = UDim2.new(0, 6, 0.5, -8)
     martialIcon.BackgroundTransparency = 1
     martialIcon.Image = "rbxassetid://79240866082046"
     martialIcon.ZIndex = 12
@@ -998,7 +946,7 @@ end, true, function(panel)
     martialTextLbl.Position = UDim2.new(0, 28, 0, 0)
     martialTextLbl.BackgroundTransparency = 1
     martialTextLbl.Text = "Martial Artist"
-    martialTextLbl.TextColor3 = THEME.TextSecondary
+    martialTextLbl.TextColor3 = Color3.fromRGB(200, 160, 120)
     martialTextLbl.TextSize = 10
     martialTextLbl.Font = Enum.Font.GothamBold
     martialTextLbl.TextXAlignment = Enum.TextXAlignment.Left
@@ -1008,15 +956,13 @@ end, true, function(panel)
     martialBtn.MouseButton1Click:Connect(function()
         if selectedStyle == "MartialArtist" then
             selectedStyle = ""
-            martialBtn.BackgroundColor3 = THEME.BgElevated
-            martialTextLbl.TextColor3 = THEME.TextSecondary
-            mbStroke.Transparency = 0.5
+            martialBtn.BackgroundColor3 = Color3.fromRGB(50, 28, 14)
+            martialTextLbl.TextColor3 = Color3.fromRGB(200, 160, 120)
             showNotification("AutoFarm", "Способность сброшена")
         else
             selectedStyle = "MartialArtist"
-            martialBtn.BackgroundColor3 = THEME.NeonRed
+            martialBtn.BackgroundColor3 = Color3.fromRGB(255, 120, 0)
             martialTextLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
-            mbStroke.Transparency = 0.1
             equipMartialArtistInGame()
             showNotification("AutoFarm", "Выбрано: Martial Artist")
         end
@@ -1028,7 +974,7 @@ end, true, function(panel)
     lbl.BackgroundTransparency = 1
     lbl.Font = Enum.Font.GothamBold
     lbl.Text = "Настройки AutoFarm:"
-    lbl.TextColor3 = THEME.TextPrimary
+    lbl.TextColor3 = Color3.fromRGB(250, 220, 170)
     lbl.TextSize = 10
     lbl.TextXAlignment = Enum.TextXAlignment.Left
     lbl.ZIndex = 11
@@ -1037,7 +983,7 @@ end, true, function(panel)
     local lockBtn = Instance.new("TextButton")
     lockBtn.Size = UDim2.new(1, 0, 0, 22)
     lockBtn.Position = UDim2.new(0, 0, 0, 64)
-    lockBtn.BackgroundColor3 = THEME.NeonRed
+    lockBtn.BackgroundColor3 = Color3.fromRGB(255, 120, 0)
     lockBtn.Text = "Фиксация цели: ON"
     lockBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
     lockBtn.TextSize = 10
@@ -1049,10 +995,10 @@ end, true, function(panel)
     lockBtn.MouseButton1Click:Connect(function()
         autoFarmLockTarget = not autoFarmLockTarget
         if autoFarmLockTarget then
-            lockBtn.BackgroundColor3 = THEME.NeonRed
+            lockBtn.BackgroundColor3 = Color3.fromRGB(255, 120, 0)
             lockBtn.Text = "Фиксация цели: ON"
         else
-            lockBtn.BackgroundColor3 = THEME.BgElevated
+            lockBtn.BackgroundColor3 = Color3.fromRGB(50, 28, 14)
             lockBtn.Text = "Фиксация цели: OFF"
         end
     end)
@@ -1060,7 +1006,7 @@ end, true, function(panel)
     local lowHpBtn = Instance.new("TextButton")
     lowHpBtn.Size = UDim2.new(1, 0, 0, 22)
     lowHpBtn.Position = UDim2.new(0, 0, 0, 90)
-    lowHpBtn.BackgroundColor3 = THEME.NeonRed
+    lowHpBtn.BackgroundColor3 = Color3.fromRGB(255, 120, 0)
     lowHpBtn.Text = "Добивать шотных (<35 HP): ON"
     lowHpBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
     lowHpBtn.TextSize = 10
@@ -1072,10 +1018,10 @@ end, true, function(panel)
     lowHpBtn.MouseButton1Click:Connect(function()
         autoFarmLowHpFinisher = not autoFarmLowHpFinisher
         if autoFarmLowHpFinisher then
-            lowHpBtn.BackgroundColor3 = THEME.NeonRed
+            lowHpBtn.BackgroundColor3 = Color3.fromRGB(255, 120, 0)
             lowHpBtn.Text = "Добивать шотных (<35 HP): ON"
         else
-            lowHpBtn.BackgroundColor3 = THEME.BgElevated
+            lowHpBtn.BackgroundColor3 = Color3.fromRGB(50, 28, 14)
             lowHpBtn.Text = "Добивать шотных (<35 HP): OFF"
         end
     end)
@@ -1083,7 +1029,7 @@ end, true, function(panel)
     local safeZoneBtn = Instance.new("TextButton")
     safeZoneBtn.Size = UDim2.new(1, 0, 0, 22)
     safeZoneBtn.Position = UDim2.new(0, 0, 0, 116)
-    safeZoneBtn.BackgroundColor3 = THEME.NeonRed
+    safeZoneBtn.BackgroundColor3 = Color3.fromRGB(255, 120, 0)
     safeZoneBtn.Text = "Безопасная зона при ударе: ON"
     safeZoneBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
     safeZoneBtn.TextSize = 9.5
@@ -1095,10 +1041,10 @@ end, true, function(panel)
     safeZoneBtn.MouseButton1Click:Connect(function()
         autoFarmSafeZoneOnHit = not autoFarmSafeZoneOnHit
         if autoFarmSafeZoneOnHit then
-            safeZoneBtn.BackgroundColor3 = THEME.NeonRed
+            safeZoneBtn.BackgroundColor3 = Color3.fromRGB(255, 120, 0)
             safeZoneBtn.Text = "Безопасная зона при ударе: ON"
         else
-            safeZoneBtn.BackgroundColor3 = THEME.BgElevated
+            safeZoneBtn.BackgroundColor3 = Color3.fromRGB(50, 28, 14)
             safeZoneBtn.Text = "Безопасная зона при ударе: OFF"
         end
     end)
@@ -1107,7 +1053,7 @@ setAutoFarmUIState = setAutoFarmUIFunc
 
 -- 2. Aim Assist
 local setAimUIFunc
-_, setAimUIFunc = createModuleCard(mainPage, "Aim Assist", "Автонаведение на цель", "Aim assist towards target", function(state)
+_, setAimUIFunc = createModuleCard(mainPage, "Aim Assist", "Автонаведение на цель", "Автонаведение на цель", function(state)
     aimAssistEnabled = state
 end, true, function(panel)
     local lbl = Instance.new("TextLabel")
@@ -1115,16 +1061,16 @@ end, true, function(panel)
     lbl.BackgroundTransparency = 1
     lbl.Font = Enum.Font.GothamBold
     lbl.Text = "Целься в:"
-    lbl.TextColor3 = THEME.TextPrimary
+    lbl.TextColor3 = Color3.fromRGB(250, 220, 170)
     lbl.TextSize = 11
     lbl.TextXAlignment = Enum.TextXAlignment.Left
     lbl.ZIndex = 11
     lbl.Parent = panel
 
     local torsoBtn = Instance.new("TextButton")
-    torsoBtn.Size = UDim2.new(0, 92, 0, 22)
+    torsoBtn.Size = UDim2.new(0, 85, 0, 22)
     torsoBtn.Position = UDim2.new(0, 0, 0, 20)
-    torsoBtn.BackgroundColor3 = THEME.NeonRed
+    torsoBtn.BackgroundColor3 = Color3.fromRGB(255, 120, 0)
     torsoBtn.Text = "Туловище"
     torsoBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
     torsoBtn.TextSize = 10
@@ -1134,11 +1080,11 @@ end, true, function(panel)
     local tbC = Instance.new("UICorner") tbC.CornerRadius = UDim.new(0, 6) tbC.Parent = torsoBtn
 
     local headBtn = Instance.new("TextButton")
-    headBtn.Size = UDim2.new(0, 92, 0, 22)
-    headBtn.Position = UDim2.new(0, 102, 0, 20)
-    headBtn.BackgroundColor3 = THEME.BgElevated
+    headBtn.Size = UDim2.new(0, 85, 0, 22)
+    headBtn.Position = UDim2.new(0, 95, 0, 20)
+    headBtn.BackgroundColor3 = Color3.fromRGB(50, 28, 14)
     headBtn.Text = "Голова"
-    headBtn.TextColor3 = THEME.TextSecondary
+    headBtn.TextColor3 = Color3.fromRGB(200, 160, 120)
     headBtn.TextSize = 10
     headBtn.Font = Enum.Font.GothamBold
     headBtn.ZIndex = 11
@@ -1147,15 +1093,15 @@ end, true, function(panel)
 
     updateAimButtonsVisual = function(partName)
         if partName == "Torso" then
-            torsoBtn.BackgroundColor3 = THEME.NeonRed
+            torsoBtn.BackgroundColor3 = Color3.fromRGB(255, 120, 0)
             torsoBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-            headBtn.BackgroundColor3 = THEME.BgElevated
-            headBtn.TextColor3 = THEME.TextSecondary
+            headBtn.BackgroundColor3 = Color3.fromRGB(50, 28, 14)
+            headBtn.TextColor3 = Color3.fromRGB(200, 160, 120)
         else
-            headBtn.BackgroundColor3 = THEME.NeonRed
+            headBtn.BackgroundColor3 = Color3.fromRGB(255, 120, 0)
             headBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-            torsoBtn.BackgroundColor3 = THEME.BgElevated
-            torsoBtn.TextColor3 = THEME.TextSecondary
+            torsoBtn.BackgroundColor3 = Color3.fromRGB(50, 28, 14)
+            torsoBtn.TextColor3 = Color3.fromRGB(200, 160, 120)
         end
     end
 
@@ -1168,16 +1114,16 @@ end, true, function(panel)
     sliderLbl.BackgroundTransparency = 1
     sliderLbl.Font = Enum.Font.GothamBold
     sliderLbl.Text = "Плавность:"
-    sliderLbl.TextColor3 = THEME.TextPrimary
-    sliderLbl.TextSize = 10
+    sliderLbl.TextColor3 = Color3.fromRGB(250, 220, 170)
+    sliderLbl.TextSize = 9
     sliderLbl.TextXAlignment = Enum.TextXAlignment.Left
     sliderLbl.ZIndex = 11
     sliderLbl.Parent = panel
 
     local sliderBg = Instance.new("Frame")
-    sliderBg.Size = UDim2.new(0, 194, 0, 6)
-    sliderBg.Position = UDim2.new(0, 0, 0, 72)
-    sliderBg.BackgroundColor3 = Color3.fromRGB(36, 14, 18)
+    sliderBg.Size = UDim2.new(0, 180, 0, 6)
+    sliderBg.Position = UDim2.new(0, 5, 0, 72)
+    sliderBg.BackgroundColor3 = Color3.fromRGB(40, 24, 15)
     sliderBg.BorderSizePixel = 0
     sliderBg.ZIndex = 11
     sliderBg.Parent = panel
@@ -1185,7 +1131,7 @@ end, true, function(panel)
 
     local sliderFill = Instance.new("Frame")
     sliderFill.Size = UDim2.new(0.5, 0, 1, 0)
-    sliderFill.BackgroundColor3 = THEME.NeonRed
+    sliderFill.BackgroundColor3 = Color3.fromRGB(255, 120, 0)
     sliderFill.BorderSizePixel = 0
     sliderFill.ZIndex = 12
     sliderFill.Parent = sliderBg
@@ -1222,7 +1168,7 @@ setAimAssistUIState = setAimUIFunc
 
 -- 3. SpeedHack
 local setSpeedUIFunc
-_, setSpeedUIFunc = createModuleCard(mainPage, "SpeedHack", "Увеличение скорости бега", "Increase walk speed", function(state)
+_, setSpeedUIFunc = createModuleCard(mainPage, "SpeedHack", "Увеличение скорости бега", "Увеличение скорости бега", function(state)
     speedHackEnabled = state
 end, true, function(panel)
     local sliderLbl = Instance.new("TextLabel")
@@ -1231,16 +1177,16 @@ end, true, function(panel)
     sliderLbl.BackgroundTransparency = 1
     sliderLbl.Font = Enum.Font.GothamBold
     sliderLbl.Text = "Скорость (16 - 150):"
-    sliderLbl.TextColor3 = THEME.TextPrimary
+    sliderLbl.TextColor3 = Color3.fromRGB(250, 220, 170)
     sliderLbl.TextSize = 10
     sliderLbl.TextXAlignment = Enum.TextXAlignment.Left
     sliderLbl.ZIndex = 11
     sliderLbl.Parent = panel
 
     local sliderBg = Instance.new("Frame")
-    sliderBg.Size = UDim2.new(0, 194, 0, 6)
-    sliderBg.Position = UDim2.new(0, 0, 0, 35)
-    sliderBg.BackgroundColor3 = Color3.fromRGB(36, 14, 18)
+    sliderBg.Size = UDim2.new(0, 180, 0, 6)
+    sliderBg.Position = UDim2.new(0, 5, 0, 35)
+    sliderBg.BackgroundColor3 = Color3.fromRGB(40, 24, 15)
     sliderBg.BorderSizePixel = 0
     sliderBg.ZIndex = 11
     sliderBg.Parent = panel
@@ -1248,7 +1194,7 @@ end, true, function(panel)
 
     local sliderFill = Instance.new("Frame")
     sliderFill.Size = UDim2.new(0.2, 0, 1, 0)
-    sliderFill.BackgroundColor3 = THEME.NeonRed
+    sliderFill.BackgroundColor3 = Color3.fromRGB(255, 120, 0)
     sliderFill.BorderSizePixel = 0
     sliderFill.ZIndex = 12
     sliderFill.Parent = sliderBg
@@ -1306,14 +1252,13 @@ local mobileDashBtn = Instance.new("Frame")
 mobileDashBtn.Name = "MobileDashBtn"
 mobileDashBtn.Size = UDim2.new(0, 60, 0, 60)
 mobileDashBtn.Position = UDim2.new(0.8, 0, 0.6, 0)
-mobileDashBtn.BackgroundColor3 = THEME.NeonRed
-mobileDashBtn.BackgroundTransparency = 0.15
+mobileDashBtn.BackgroundColor3 = Color3.fromRGB(255, 120, 0)
+mobileDashBtn.BackgroundTransparency = 0.2
 mobileDashBtn.Visible = false
 mobileDashBtn.ZIndex = 200
 mobileDashBtn.Parent = screenGui
 
 local mdCorner = Instance.new("UICorner") mdCorner.CornerRadius = UDim.new(1, 0) mdCorner.Parent = mobileDashBtn
-addNeonStroke(mobileDashBtn, 1.5, 0.2, Color3.fromRGB(255, 110, 125))
 local mdLbl = Instance.new("TextLabel") mdLbl.Size = UDim2.new(1, 0, 1, 0) mdLbl.BackgroundTransparency = 1 mdLbl.Font = Enum.Font.GothamBold mdLbl.Text = "DASH" mdLbl.TextColor3 = Color3.fromRGB(255, 255, 255) mdLbl.TextSize = 13 mdLbl.ZIndex = 201 mdLbl.Parent = mobileDashBtn
 local mdClick = Instance.new("TextButton") mdClick.Size = UDim2.new(1, 0, 1, 0) mdClick.BackgroundTransparency = 1 mdClick.Text = "" mdClick.ZIndex = 202 mdClick.Parent = mobileDashBtn
 
@@ -1326,7 +1271,7 @@ end)
 
 -- 4. Fake Dash
 local setDashUIFunc
-_, setDashUIFunc = createModuleCard(mainPage, "Fake Dash", "Анимация и перемещение рывка без урона", "Dash animation and movement without damage", function(state)
+_, setDashUIFunc = createModuleCard(mainPage, "Fake Dash", "Анимация и перемещение рывка без урона", "Анимация и перемещение рывка без урона", function(state)
     fakeDashEnabled = state
     if not fakeDashEnabled then
         mobileDashBtn.Visible = false
@@ -1340,18 +1285,18 @@ end, true, function(panel)
     keyLbl.BackgroundTransparency = 1
     keyLbl.Font = Enum.Font.GothamBold
     keyLbl.Text = "Клавиша рывка (ПК):"
-    keyLbl.TextColor3 = THEME.TextPrimary
+    keyLbl.TextColor3 = Color3.fromRGB(250, 220, 170)
     keyLbl.TextSize = 10
     keyLbl.TextXAlignment = Enum.TextXAlignment.Left
     keyLbl.ZIndex = 11
     keyLbl.Parent = panel
 
     local keyBtn = Instance.new("TextButton")
-    keyBtn.Size = UDim2.new(0, 96, 0, 22)
+    keyBtn.Size = UDim2.new(0, 90, 0, 22)
     keyBtn.Position = UDim2.new(0, 0, 0, 20)
-    keyBtn.BackgroundColor3 = THEME.BgElevated
+    keyBtn.BackgroundColor3 = Color3.fromRGB(50, 28, 14)
     keyBtn.Text = "[" .. fakeDashKey.Name .. "]"
-    keyBtn.TextColor3 = THEME.NeonRed
+    keyBtn.TextColor3 = Color3.fromRGB(255, 180, 90)
     keyBtn.TextSize = 10
     keyBtn.Font = Enum.Font.GothamBold
     keyBtn.ZIndex = 11
@@ -1362,7 +1307,7 @@ end, true, function(panel)
     keyBtn.MouseButton1Click:Connect(function()
         listeningForKey = true
         keyBtn.Text = "[Жми...]"
-        keyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        keyBtn.TextColor3 = Color3.fromRGB(255, 120, 0)
     end)
 
     UserInputService.InputBegan:Connect(function(input, gameProcessed)
@@ -1370,17 +1315,17 @@ end, true, function(panel)
             listeningForKey = false
             fakeDashKey = input.KeyCode
             keyBtn.Text = "[" .. fakeDashKey.Name .. "]"
-            keyBtn.TextColor3 = THEME.NeonRed
+            keyBtn.TextColor3 = Color3.fromRGB(255, 180, 90)
         end
     end)
 
     local mobBtnToggle = Instance.new("TextButton")
-    mobBtnToggle.Size = UDim2.new(0, 194, 0, 26)
+    mobBtnToggle.Size = UDim2.new(0, 180, 0, 26)
     mobBtnToggle.Position = UDim2.new(0, 0, 0, 48)
-    mobBtnToggle.BackgroundColor3 = THEME.BgElevated
+    mobBtnToggle.BackgroundColor3 = Color3.fromRGB(50, 28, 14)
     mobBtnToggle.Text = "Кнопка (телефон): OFF"
-    mobBtnToggle.TextColor3 = THEME.TextSecondary
-    mobBtnToggle.TextSize = 9.5
+    mobBtnToggle.TextColor3 = Color3.fromRGB(200, 160, 120)
+    mobBtnToggle.TextSize = 9
     mobBtnToggle.Font = Enum.Font.GothamBold
     mobBtnToggle.ZIndex = 11
     mobBtnToggle.Parent = panel
@@ -1391,12 +1336,12 @@ end, true, function(panel)
         if fakeDashMobileBtnEnabled then
             mobBtnToggle.Text = "Кнопка (телефон): ON"
             mobBtnToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
-            mobBtnToggle.BackgroundColor3 = THEME.NeonRed
+            mobBtnToggle.BackgroundColor3 = Color3.fromRGB(255, 120, 0)
             if fakeDashEnabled then mobileDashBtn.Visible = true end
         else
             mobBtnToggle.Text = "Кнопка (телефон): OFF"
-            mobBtnToggle.TextColor3 = THEME.TextSecondary
-            mobBtnToggle.BackgroundColor3 = THEME.BgElevated
+            mobBtnToggle.TextColor3 = Color3.fromRGB(200, 160, 120)
+            mobBtnToggle.BackgroundColor3 = Color3.fromRGB(50, 28, 14)
             mobileDashBtn.Visible = false
         end
     end)
@@ -1445,7 +1390,7 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 end)
 
 -- Visuals
-createModuleCard(visualsPage, "Fullbright", "Максимально светлое освещение карты", "Maximum bright map lighting", function(state)
+createModuleCard(visualsPage, "Fullbright", "Максимально светлое освещение карты", "Максимально светлое освещение карты", function(state)
     fullbrightEnabled = state
     if fullbrightEnabled then
         Lighting.Brightness = 2
@@ -1462,7 +1407,7 @@ createModuleCard(visualsPage, "Fullbright", "Максимально светло
 end, false)
 
 local setScriptVisualsUIFunc
-_, setScriptVisualsUIFunc = createModuleCard(visualsPage, "Script Visuals", "Падающие стикеры в меню", "Falling stickers in menu", function(state)
+_, setScriptVisualsUIFunc = createModuleCard(visualsPage, "Script Visuals", "Падающие стикеры в меню", "Падающие стикеры в меню", function(state)
     scriptVisualsEnabled = state
 end, true, function(panel)
     local lbl = Instance.new("TextLabel")
@@ -1470,25 +1415,25 @@ end, true, function(panel)
     lbl.BackgroundTransparency = 1
     lbl.Font = Enum.Font.GothamBold
     lbl.Text = "Выберите стиль меню:"
-    lbl.TextColor3 = THEME.TextPrimary
+    lbl.TextColor3 = Color3.fromRGB(250, 220, 170)
     lbl.TextSize = 11
     lbl.TextXAlignment = Enum.TextXAlignment.Left
     lbl.ZIndex = 11
     lbl.Parent = panel
 
-    local btn1 = Instance.new("TextButton") btn1.Size = UDim2.new(0, 34, 0, 24) btn1.Position = UDim2.new(0, 0, 0, 22) btn1.BackgroundColor3 = THEME.NeonRed btn1.Text = "🌸" btn1.TextColor3 = Color3.fromRGB(255, 255, 255) btn1.TextSize = 12 btn1.Font = Enum.Font.GothamBold btn1.ZIndex = 11 btn1.Parent = panel local c1 = Instance.new("UICorner") c1.CornerRadius = UDim.new(0, 6) c1.Parent = btn1
-    local btn2 = Instance.new("TextButton") btn2.Size = UDim2.new(0, 34, 0, 24) btn2.Position = UDim2.new(0, 39, 0, 22) btn2.BackgroundColor3 = THEME.BgElevated btn2.Text = "❤️" btn2.TextColor3 = THEME.TextSecondary btn2.TextSize = 12 btn2.Font = Enum.Font.GothamBold btn2.ZIndex = 11 btn2.Parent = panel local c2 = Instance.new("UICorner") c2.CornerRadius = UDim.new(0, 6) c2.Parent = btn2
-    local btn3 = Instance.new("TextButton") btn3.Size = UDim2.new(0, 34, 0, 24) btn3.Position = UDim2.new(0, 78, 0, 22) btn3.BackgroundColor3 = THEME.BgElevated btn3.Text = "⭐" btn3.TextColor3 = THEME.TextSecondary btn3.TextSize = 12 btn3.Font = Enum.Font.GothamBold btn3.ZIndex = 11 btn3.Parent = panel local c3 = Instance.new("UICorner") c3.CornerRadius = UDim.new(0, 6) c3.Parent = btn3
-    local btn4 = Instance.new("TextButton") btn4.Size = UDim2.new(0, 38, 0, 24) btn4.Position = UDim2.new(0, 117, 0, 22) btn4.BackgroundColor3 = THEME.BgElevated btn4.Text = "🍃" btn4.TextColor3 = THEME.TextSecondary btn4.TextSize = 12 btn4.Font = Enum.Font.GothamBold btn4.ZIndex = 11 btn4.Parent = panel local c4 = Instance.new("UICorner") c4.CornerRadius = UDim.new(0, 6) c4.Parent = btn4
-    local btn5 = Instance.new("TextButton") btn5.Size = UDim2.new(0, 38, 0, 24) btn5.Position = UDim2.new(0, 160, 0, 22) btn5.BackgroundColor3 = THEME.BgElevated btn5.Text = "❄️" btn5.TextColor3 = THEME.TextSecondary btn5.TextSize = 12 btn5.Font = Enum.Font.GothamBold btn5.ZIndex = 11 btn5.Parent = panel local c5 = Instance.new("UICorner") c5.CornerRadius = UDim.new(0, 6) c5.Parent = btn5
+    local btn1 = Instance.new("TextButton") btn1.Size = UDim2.new(0, 32, 0, 24) btn1.Position = UDim2.new(0, 0, 0, 22) btn1.BackgroundColor3 = Color3.fromRGB(255, 120, 0) btn1.Text = "🌸" btn1.TextColor3 = Color3.fromRGB(255, 255, 255) btn1.TextSize = 12 btn1.Font = Enum.Font.GothamBold btn1.ZIndex = 11 btn1.Parent = panel local c1 = Instance.new("UICorner") c1.CornerRadius = UDim.new(0, 6) c1.Parent = btn1
+    local btn2 = Instance.new("TextButton") btn2.Size = UDim2.new(0, 32, 0, 24) btn2.Position = UDim2.new(0, 36, 0, 22) btn2.BackgroundColor3 = Color3.fromRGB(50, 28, 14) btn2.Text = "❤️" btn2.TextColor3 = Color3.fromRGB(200, 160, 120) btn2.TextSize = 12 btn2.Font = Enum.Font.GothamBold btn2.ZIndex = 11 btn2.Parent = panel local c2 = Instance.new("UICorner") c2.CornerRadius = UDim.new(0, 6) c2.Parent = btn2
+    local btn3 = Instance.new("TextButton") btn3.Size = UDim2.new(0, 32, 0, 24) btn3.Position = UDim2.new(0, 72, 0, 22) btn3.BackgroundColor3 = Color3.fromRGB(50, 28, 14) btn3.Text = "⭐" btn3.TextColor3 = Color3.fromRGB(200, 160, 120) btn3.TextSize = 12 btn3.Font = Enum.Font.GothamBold btn3.ZIndex = 11 btn3.Parent = panel local c3 = Instance.new("UICorner") c3.CornerRadius = UDim.new(0, 6) c3.Parent = btn3
+    local btn4 = Instance.new("TextButton") btn4.Size = UDim2.new(0, 38, 0, 24) btn4.Position = UDim2.new(0, 108, 0, 22) btn4.BackgroundColor3 = Color3.fromRGB(50, 28, 14) btn4.Text = "🍃" btn4.TextColor3 = Color3.fromRGB(200, 160, 120) btn4.TextSize = 12 btn4.Font = Enum.Font.GothamBold btn4.ZIndex = 11 btn4.Parent = panel local c4 = Instance.new("UICorner") c4.CornerRadius = UDim.new(0, 6) c4.Parent = btn4
+    local btn5 = Instance.new("TextButton") btn5.Size = UDim2.new(0, 38, 0, 24) btn5.Position = UDim2.new(0, 150, 0, 22) btn5.BackgroundColor3 = Color3.fromRGB(50, 28, 14) btn5.Text = "❄️" btn5.TextColor3 = Color3.fromRGB(200, 160, 120) btn5.TextSize = 12 btn5.Font = Enum.Font.GothamBold btn5.ZIndex = 11 btn5.Parent = panel local c5 = Instance.new("UICorner") c5.CornerRadius = UDim.new(0, 6) c5.Parent = btn5
 
     local function updateParticleButtons(pType)
         currentParticleType = pType
         local buttons = { {btn1, "🌸"}, {btn2, "❤️"}, {btn3, "⭐"}, {btn4, "🍃"}, {btn5, "❄️"} }
         for _, pair in ipairs(buttons) do
             local active = (pair[2] == pType)
-            pair[1].BackgroundColor3 = active and THEME.NeonRed or THEME.BgElevated
-            pair[1].TextColor3 = active and Color3.fromRGB(255, 255, 255) or THEME.TextSecondary
+            pair[1].BackgroundColor3 = active and Color3.fromRGB(255, 120, 0) or Color3.fromRGB(50, 28, 14)
+            pair[1].TextColor3 = active and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(200, 160, 120)
         end
     end
 
@@ -1501,7 +1446,7 @@ end)
 setScriptVisualsUIState = setScriptVisualsUIFunc
 
 local setWorldVisualsUIFunc
-_, setWorldVisualsUIFunc = createModuleCard(visualsPage, "World Visual", "Стикеры падают вокруг вас в мире", "Stickers fall around you in the world", function(state)
+_, setWorldVisualsUIFunc = createModuleCard(visualsPage, "World Visual", "Стикеры падают вокруг вас в мире", "Стикеры падают вокруг вас в мире", function(state)
     worldVisualsEnabled = state
 end, true, function(panel)
     local lbl = Instance.new("TextLabel")
@@ -1509,25 +1454,25 @@ end, true, function(panel)
     lbl.BackgroundTransparency = 1
     lbl.Font = Enum.Font.GothamBold
     lbl.Text = "Выберите стиль мира:"
-    lbl.TextColor3 = THEME.TextPrimary
+    lbl.TextColor3 = Color3.fromRGB(250, 220, 170)
     lbl.TextSize = 11
     lbl.TextXAlignment = Enum.TextXAlignment.Left
     lbl.ZIndex = 11
     lbl.Parent = panel
 
-    local wbtn1 = Instance.new("TextButton") wbtn1.Size = UDim2.new(0, 34, 0, 22) wbtn1.Position = UDim2.new(0, 0, 0, 20) wbtn1.BackgroundColor3 = THEME.NeonRed wbtn1.Text = "🌸" wbtn1.TextColor3 = Color3.fromRGB(255, 255, 255) wbtn1.TextSize = 11 wbtn1.Font = Enum.Font.GothamBold wbtn1.ZIndex = 11 wbtn1.Parent = panel local wc1 = Instance.new("UICorner") wc1.CornerRadius = UDim.new(0, 6) wc1.Parent = wbtn1
-    local wbtn2 = Instance.new("TextButton") wbtn2.Size = UDim2.new(0, 34, 0, 22) wbtn2.Position = UDim2.new(0, 39, 0, 20) wbtn2.BackgroundColor3 = THEME.BgElevated wbtn2.Text = "❤️" wbtn2.TextColor3 = THEME.TextSecondary wbtn2.TextSize = 11 wbtn2.Font = Enum.Font.GothamBold wbtn2.ZIndex = 11 wbtn2.Parent = panel local wc2 = Instance.new("UICorner") wc2.CornerRadius = UDim.new(0, 6) wc2.Parent = wbtn2
-    local wbtn3 = Instance.new("TextButton") wbtn3.Size = UDim2.new(0, 34, 0, 22) wbtn3.Position = UDim2.new(0, 78, 0, 20) wbtn3.BackgroundColor3 = THEME.BgElevated wbtn3.Text = "⭐" wbtn3.TextColor3 = THEME.TextSecondary wbtn3.TextSize = 11 wbtn3.Font = Enum.Font.GothamBold wbtn3.ZIndex = 11 wbtn3.Parent = panel local wc3 = Instance.new("UICorner") wc3.CornerRadius = UDim.new(0, 6) wc3.Parent = wbtn3
-    local wbtn4 = Instance.new("TextButton") wbtn4.Size = UDim2.new(0, 38, 0, 22) wbtn4.Position = UDim2.new(0, 117, 0, 20) wbtn4.BackgroundColor3 = THEME.BgElevated wbtn4.Text = "🍃" wbtn4.TextColor3 = THEME.TextSecondary wbtn4.TextSize = 11 wbtn4.Font = Enum.Font.GothamBold wbtn4.ZIndex = 11 wbtn4.Parent = panel local wc4 = Instance.new("UICorner") wc4.CornerRadius = UDim.new(0, 6) wc4.Parent = wbtn4
-    local wbtn5 = Instance.new("TextButton") wbtn5.Size = UDim2.new(0, 38, 0, 22) wbtn5.Position = UDim2.new(0, 160, 0, 20) wbtn5.BackgroundColor3 = THEME.BgElevated wbtn5.Text = "❄️" wbtn5.TextColor3 = THEME.TextSecondary wbtn5.TextSize = 11 wbtn5.Font = Enum.Font.GothamBold wbtn5.ZIndex = 11 wbtn5.Parent = panel local wc5 = Instance.new("UICorner") wc5.CornerRadius = UDim.new(0, 6) wc5.Parent = wbtn5
+    local wbtn1 = Instance.new("TextButton") wbtn1.Size = UDim2.new(0, 32, 0, 22) wbtn1.Position = UDim2.new(0, 0, 0, 20) wbtn1.BackgroundColor3 = Color3.fromRGB(255, 120, 0) wbtn1.Text = "🌸" wbtn1.TextColor3 = Color3.fromRGB(255, 255, 255) wbtn1.TextSize = 11 wbtn1.Font = Enum.Font.GothamBold wbtn1.ZIndex = 11 wbtn1.Parent = panel local wc1 = Instance.new("UICorner") wc1.CornerRadius = UDim.new(0, 6) wc1.Parent = wbtn1
+    local wbtn2 = Instance.new("TextButton") wbtn2.Size = UDim2.new(0, 32, 0, 22) wbtn2.Position = UDim2.new(0, 36, 0, 20) wbtn2.BackgroundColor3 = Color3.fromRGB(50, 28, 14) wbtn2.Text = "❤️" wbtn2.TextColor3 = Color3.fromRGB(200, 160, 120) wbtn2.TextSize = 11 wbtn2.Font = Enum.Font.GothamBold wbtn2.ZIndex = 11 wbtn2.Parent = panel local wc2 = Instance.new("UICorner") wc2.CornerRadius = UDim.new(0, 6) wc2.Parent = wbtn2
+    local wbtn3 = Instance.new("TextButton") wbtn3.Size = UDim2.new(0, 32, 0, 22) wbtn3.Position = UDim2.new(0, 72, 0, 20) wbtn3.BackgroundColor3 = Color3.fromRGB(50, 28, 14) wbtn3.Text = "⭐" wbtn3.TextColor3 = Color3.fromRGB(200, 160, 120) wbtn3.TextSize = 11 wbtn3.Font = Enum.Font.GothamBold wbtn3.ZIndex = 11 wbtn3.Parent = panel local wc3 = Instance.new("UICorner") wc3.CornerRadius = UDim.new(0, 6) wc3.Parent = wbtn3
+    local wbtn4 = Instance.new("TextButton") wbtn4.Size = UDim2.new(0, 38, 0, 22) wbtn4.Position = UDim2.new(0, 108, 0, 20) wbtn4.BackgroundColor3 = Color3.fromRGB(50, 28, 14) wbtn4.Text = "🍃" wbtn4.TextColor3 = Color3.fromRGB(200, 160, 120) wbtn4.TextSize = 11 wbtn4.Font = Enum.Font.GothamBold wbtn4.ZIndex = 11 wbtn4.Parent = panel local wc4 = Instance.new("UICorner") wc4.CornerRadius = UDim.new(0, 6) wc4.Parent = wbtn4
+    local wbtn5 = Instance.new("TextButton") wbtn5.Size = UDim2.new(0, 38, 0, 22) wbtn5.Position = UDim2.new(0, 150, 0, 20) wbtn5.BackgroundColor3 = Color3.fromRGB(50, 28, 14) wbtn5.Text = "❄️" wbtn5.TextColor3 = Color3.fromRGB(200, 160, 120) wbtn5.TextSize = 11 wbtn5.Font = Enum.Font.GothamBold wbtn5.ZIndex = 11 wbtn5.Parent = panel local wc5 = Instance.new("UICorner") wc5.CornerRadius = UDim.new(0, 6) wc5.Parent = wbtn5
 
     local function updateWorldParticleButtons(pType)
         worldParticleType = pType
         local buttons = { {wbtn1, "🌸"}, {wbtn2, "❤️"}, {wbtn3, "⭐"}, {wbtn4, "🍃"}, {wbtn5, "❄️"} }
         for _, pair in ipairs(buttons) do
             local active = (pair[2] == pType)
-            pair[1].BackgroundColor3 = active and THEME.NeonRed or THEME.BgElevated
-            pair[1].TextColor3 = active and Color3.fromRGB(255, 255, 255) or THEME.TextSecondary
+            pair[1].BackgroundColor3 = active and Color3.fromRGB(255, 120, 0) or Color3.fromRGB(50, 28, 14)
+            pair[1].TextColor3 = active and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(200, 160, 120)
         end
     end
 
@@ -1543,16 +1488,16 @@ end, true, function(panel)
     speedLbl.BackgroundTransparency = 1
     speedLbl.Font = Enum.Font.GothamBold
     speedLbl.Text = "Скорость падения:"
-    speedLbl.TextColor3 = THEME.TextPrimary
-    speedLbl.TextSize = 10
+    speedLbl.TextColor3 = Color3.fromRGB(250, 220, 170)
+    speedLbl.TextSize = 9
     speedLbl.TextXAlignment = Enum.TextXAlignment.Left
     speedLbl.ZIndex = 11
     speedLbl.Parent = panel
 
     local sliderBg = Instance.new("Frame")
-    sliderBg.Size = UDim2.new(0, 194, 0, 6)
-    sliderBg.Position = UDim2.new(0, 0, 0, 70)
-    sliderBg.BackgroundColor3 = Color3.fromRGB(36, 14, 18)
+    sliderBg.Size = UDim2.new(0, 180, 0, 6)
+    sliderBg.Position = UDim2.new(0, 5, 0, 70)
+    sliderBg.BackgroundColor3 = Color3.fromRGB(40, 24, 15)
     sliderBg.BorderSizePixel = 0
     sliderBg.ZIndex = 11
     sliderBg.Parent = panel
@@ -1560,7 +1505,7 @@ end, true, function(panel)
 
     local sliderFill = Instance.new("Frame")
     sliderFill.Size = UDim2.new(0.5, 0, 1, 0)
-    sliderFill.BackgroundColor3 = THEME.NeonRed
+    sliderFill.BackgroundColor3 = Color3.fromRGB(255, 120, 0)
     sliderFill.BorderSizePixel = 0
     sliderFill.ZIndex = 12
     sliderFill.Parent = sliderBg
@@ -1587,18 +1532,17 @@ end, true, function(panel)
 end)
 setWorldVisualsUIState = setWorldVisualsUIFunc
 
--- СИСТЕМА АУР: "НУБ-АУРА" И "ПРЕМИУМ" (МНОГОСЛОЙНОЕ ФИОЛЕТОВОЕ МАГИЧЕСКОЕ ПЛАМЯ)
+-- СИСТЕМА АУР: "НУБ-АУРА" И "ОГНЕВАЯ АУРА"
 local activeAuraConnection = nil
 local activeAuraFolder = nil
 local previewAuraFolder = nil
 
 local function buildAuraVisualsOnTarget(char, root, parentContainer, mode)
     local folder = Instance.new("Folder")
-    folder.Name = (mode == "Premium") and "PremiumPurpleFlameAura" or "NoobPsyAura"
+    folder.Name = (mode == "Fire") and "FirePurpleAura" or "NoobPsyAura"
     folder.Parent = parentContainer
 
-    if mode == "Premium" then
-        -- Плотный магический фиолетовый огонь: ядро + внешние языки + энергетический дым + свет
+    if mode == "Fire" then
         local coreAtt = Instance.new("Attachment")
         coreAtt.Name = "FlameCoreAttachment"
         coreAtt.Position = Vector3.new(0, -0.5, 0)
@@ -1614,7 +1558,6 @@ local function buildAuraVisualsOnTarget(char, root, parentContainer, mode)
         smokeAtt.Position = Vector3.new(0, 0.2, 0)
         smokeAtt.Parent = root
 
-        -- Слой 1: Яркое фиолетово-сиреневое ядро пламени
         local coreFlame = Instance.new("ParticleEmitter")
         coreFlame.Name = "CoreFlame"
         coreFlame.Texture = "rbxasset://textures/particles/fire_main.dds"
@@ -1644,7 +1587,6 @@ local function buildAuraVisualsOnTarget(char, root, parentContainer, mode)
         })
         coreFlame.Parent = coreAtt
 
-        -- Слой 2: Тёмно-фиолетовые объёмные языки пламени вокруг персонажа
         local outerFlame = Instance.new("ParticleEmitter")
         outerFlame.Name = "OuterFlameTongues"
         outerFlame.Texture = "rbxasset://textures/particles/fire_main.dds"
@@ -1674,7 +1616,6 @@ local function buildAuraVisualsOnTarget(char, root, parentContainer, mode)
         })
         outerFlame.Parent = tonguesAtt
 
-        -- Слой 3: Плотный энергетический дым
         local energySmoke = Instance.new("ParticleEmitter")
         energySmoke.Name = "EnergySmoke"
         energySmoke.Texture = "rbxasset://textures/particles/smoke_main.dds"
@@ -1729,7 +1670,6 @@ local function buildAuraVisualsOnTarget(char, root, parentContainer, mode)
 
         return folder, conn
     else
-        -- Нуб-аура (старый стиль психо-ауры)
         local Colors = {
             Color3.fromRGB(125, 50, 255),
             Color3.fromRGB(65, 160, 255),
@@ -1814,9 +1754,9 @@ local function applyActiveAura(char)
     end)
 end
 
--- Модуль "Аура" (вкладка Visuals)
+-- Модуль "Аура"
 local setAuraUIFunc
-_, setAuraUIFunc = createModuleCard(visualsPage, "Аура", "Эффекты вокруг персонажа", "Effects around character", function(state)
+_, setAuraUIFunc = createModuleCard(visualsPage, "Аура", "Эффекты вокруг персонажа", "Эффекты вокруг персонажа", function(state)
     auraEnabled = state
     if auraEnabled then
         if player.Character then applyActiveAura(player.Character) end
@@ -1824,23 +1764,22 @@ _, setAuraUIFunc = createModuleCard(visualsPage, "Аура", "Эффекты в�
         removeActiveAura()
     end
 end, true, function(panel)
-    -- 1. Выбор ауры: Нуб-аура / Премиум
     local pickLbl = Instance.new("TextLabel")
     pickLbl.Size = UDim2.new(1, 0, 0, 15)
     pickLbl.Position = UDim2.new(0, 0, 0, 0)
     pickLbl.BackgroundTransparency = 1
     pickLbl.Font = Enum.Font.GothamBold
     pickLbl.Text = "Выберите ауру:"
-    pickLbl.TextColor3 = THEME.TextPrimary
+    pickLbl.TextColor3 = Color3.fromRGB(250, 220, 170)
     pickLbl.TextSize = 10
     pickLbl.TextXAlignment = Enum.TextXAlignment.Left
     pickLbl.ZIndex = 11
     pickLbl.Parent = panel
 
     local noobBtn = Instance.new("TextButton")
-    noobBtn.Size = UDim2.new(0, 94, 0, 22)
+    noobBtn.Size = UDim2.new(0, 92, 0, 22)
     noobBtn.Position = UDim2.new(0, 0, 0, 17)
-    noobBtn.BackgroundColor3 = THEME.NeonRed
+    noobBtn.BackgroundColor3 = Color3.fromRGB(255, 120, 0)
     noobBtn.Text = "Нуб-аура"
     noobBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
     noobBtn.TextSize = 10
@@ -1849,44 +1788,42 @@ end, true, function(panel)
     noobBtn.Parent = panel
     local nbC = Instance.new("UICorner") nbC.CornerRadius = UDim.new(0, 6) nbC.Parent = noobBtn
 
-    local premBtn = Instance.new("TextButton")
-    premBtn.Size = UDim2.new(0, 94, 0, 22)
-    premBtn.Position = UDim2.new(0, 102, 0, 17)
-    premBtn.BackgroundColor3 = THEME.BgElevated
-    premBtn.Text = "Премиум"
-    premBtn.TextColor3 = THEME.TextSecondary
-    premBtn.TextSize = 10
-    premBtn.Font = Enum.Font.GothamBold
-    premBtn.ZIndex = 11
-    premBtn.Parent = panel
-    local prC = Instance.new("UICorner") prC.CornerRadius = UDim.new(0, 6) prC.Parent = premBtn
+    local fireBtn = Instance.new("TextButton")
+    fireBtn.Size = UDim2.new(0, 96, 0, 22)
+    fireBtn.Position = UDim2.new(0, 98, 0, 17)
+    fireBtn.BackgroundColor3 = Color3.fromRGB(50, 28, 14)
+    fireBtn.Text = "Огневая аура"
+    fireBtn.TextColor3 = Color3.fromRGB(200, 160, 120)
+    fireBtn.TextSize = 10
+    fireBtn.Font = Enum.Font.GothamBold
+    fireBtn.ZIndex = 11
+    fireBtn.Parent = panel
+    local frC = Instance.new("UICorner") frC.CornerRadius = UDim.new(0, 6) frC.Parent = fireBtn
 
-    -- 2. Окно предпросмотра ауры
     local previewContainer = Instance.new("Frame")
     previewContainer.Name = "PreviewContainer"
-    previewContainer.Size = UDim2.new(0, 196, 0, 126)
+    previewContainer.Size = UDim2.new(0, 195, 0, 126)
     previewContainer.Position = UDim2.new(0, 0, 0, 44)
-    previewContainer.BackgroundColor3 = Color3.fromRGB(12, 8, 12)
-    previewContainer.BackgroundTransparency = 0.08
+    previewContainer.BackgroundColor3 = Color3.fromRGB(30, 16, 8)
+    previewContainer.BackgroundTransparency = 0.2
     previewContainer.BorderSizePixel = 0
     previewContainer.ZIndex = 11
     previewContainer.Parent = panel
 
     local pcCorner = Instance.new("UICorner") pcCorner.CornerRadius = UDim.new(0, 8) pcCorner.Parent = previewContainer
-    addNeonStroke(previewContainer, 1, 0.45, THEME.AccentRed)
 
     local prevTitle = Instance.new("TextLabel")
     prevTitle.Size = UDim2.new(1, -10, 0, 16)
     prevTitle.Position = UDim2.new(0, 6, 0, 3)
     prevTitle.BackgroundTransparency = 1
     prevTitle.Font = Enum.Font.GothamBold
-    prevTitle.Text = (currentLanguage == "RU") and "Предпросмотр" or "Preview"
-    prevTitle.TextColor3 = THEME.TextPrimary
+    prevTitle.Text = "Предпросмотр"
+    prevTitle.TextColor3 = Color3.fromRGB(250, 220, 170)
     prevTitle.TextSize = 10
     prevTitle.TextXAlignment = Enum.TextXAlignment.Left
     prevTitle.ZIndex = 12
     prevTitle.Parent = previewContainer
-    table.insert(translatableCards, {lbl = prevTitle, ru = "Предпросмотр", en = "Preview"})
+    table.insert(translatableCards, {lbl = prevTitle, ru = "Предпросмотр", en = "Предпросмотр"})
 
     local viewport = Instance.new("ViewportFrame")
     viewport.Size = UDim2.new(1, -10, 1, -34)
@@ -1947,11 +1884,11 @@ end, true, function(panel)
     end)
 
     refreshAuraPreviewVisual = function()
-        local isPrem = (selectedAuraMode == "Premium")
-        noobBtn.BackgroundColor3 = (not isPrem) and THEME.NeonRed or THEME.BgElevated
-        noobBtn.TextColor3 = (not isPrem) and Color3.fromRGB(255, 255, 255) or THEME.TextSecondary
-        premBtn.BackgroundColor3 = isPrem and THEME.NeonRed or THEME.BgElevated
-        premBtn.TextColor3 = isPrem and Color3.fromRGB(255, 255, 255) or THEME.TextSecondary
+        local isFire = (selectedAuraMode == "Fire")
+        noobBtn.BackgroundColor3 = (not isFire) and Color3.fromRGB(255, 120, 0) or Color3.fromRGB(50, 28, 14)
+        noobBtn.TextColor3 = (not isFire) and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(200, 160, 120)
+        fireBtn.BackgroundColor3 = isFire and Color3.fromRGB(255, 120, 0) or Color3.fromRGB(50, 28, 14)
+        fireBtn.TextColor3 = isFire and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(200, 160, 120)
         rebuildPreviewAura()
         if auraEnabled and player.Character then
             applyActiveAura(player.Character)
@@ -1964,10 +1901,10 @@ end, true, function(panel)
         showNotification("Аура", "Выбрана: Нуб-аура")
     end)
 
-    premBtn.MouseButton1Click:Connect(function()
-        selectedAuraMode = "Premium"
+    fireBtn.MouseButton1Click:Connect(function()
+        selectedAuraMode = "Fire"
         refreshAuraPreviewVisual()
-        showNotification("Аура", "Выбрана: Премиум")
+        showNotification("Аура", "Выбрана: Огневая аура")
     end)
 
     local draggingModel = false
@@ -2013,13 +1950,13 @@ end, true, function(panel)
     hintLbl.Position = UDim2.new(0, 5, 1, -15)
     hintLbl.BackgroundTransparency = 1
     hintLbl.Font = Enum.Font.Gotham
-    hintLbl.Text = (currentLanguage == "RU") and "Тащите, чтобы повернуть" or "Drag to rotate"
-    hintLbl.TextColor3 = THEME.TextMuted
+    hintLbl.Text = "Тащите, чтобы повернуть"
+    hintLbl.TextColor3 = Color3.fromRGB(160, 120, 80)
     hintLbl.TextSize = 8
     hintLbl.TextXAlignment = Enum.TextXAlignment.Center
     hintLbl.ZIndex = 12
     hintLbl.Parent = previewContainer
-    table.insert(translatableCards, {lbl = hintLbl, ru = "Тащите, чтобы повернуть", en = "Drag to rotate"})
+    table.insert(translatableCards, {lbl = hintLbl, ru = "Тащите, чтобы повернуть", en = "Тащите, чтобы повернуть"})
 end, 246)
 setAuraUIState = setAuraUIFunc
 
@@ -2031,6 +1968,201 @@ player.CharacterAdded:Connect(function(char)
     end
 end)
 
+-- ОБЪЁМНЫЕ БЕЛОСНЕЖНЫЕ АНГЕЛЬСКИЕ КРЫЛЬЯ (ОТДЕЛЬНЫЕ ПЕРЬЯ + СЕРЕБРИСТО-ЗОЛОТИСТОЕ СВЕЧЕНИЕ)
+local angelWingsModel = nil
+local angelWingsConn = nil
+
+local function removeAngelWings()
+    pcall(function()
+        if angelWingsConn then
+            angelWingsConn:Disconnect()
+            angelWingsConn = nil
+        end
+        if angelWingsModel then
+            angelWingsModel:Destroy()
+            angelWingsModel = nil
+        end
+    end)
+end
+
+local function applyAngelWings(char)
+    pcall(function()
+        removeAngelWings()
+        if not angelWingsEnabled or not char then return end
+
+        local torso = char:FindFirstChild("UpperTorso") or char:FindFirstChild("Torso") or char:FindFirstChild("HumanoidRootPart")
+        if not torso then return end
+
+        local model = Instance.new("Model")
+        model.Name = "AngelWingsRig"
+        model.Parent = Workspace
+        angelWingsModel = model
+
+        local anchor = Instance.new("Part")
+        anchor.Name = "WingsAnchor"
+        anchor.Size = Vector3.new(0.4, 0.4, 0.4)
+        anchor.Transparency = 1
+        anchor.Anchored = false
+        anchor.CanCollide = false
+        anchor.Massless = true
+        anchor.CFrame = torso.CFrame * CFrame.new(0, 0.35, 0.62)
+        anchor.Parent = model
+        model.PrimaryPart = anchor
+
+        local weld = Instance.new("WeldConstraint")
+        weld.Part0 = torso
+        weld.Part1 = anchor
+        weld.Parent = anchor
+
+        local softLight = Instance.new("PointLight")
+        softLight.Color = Color3.fromRGB(255, 248, 225)
+        softLight.Brightness = 2.4
+        softLight.Range = 11
+        softLight.Parent = anchor
+
+        local leftJoint = Instance.new("Part")
+        leftJoint.Name = "LeftWingJoint"
+        leftJoint.Size = Vector3.new(0.25, 0.25, 0.25)
+        leftJoint.Transparency = 1
+        leftJoint.Anchored = false
+        leftJoint.CanCollide = false
+        leftJoint.Massless = true
+        leftJoint.CFrame = anchor.CFrame * CFrame.new(-0.35, 0.1, 0)
+        leftJoint.Parent = model
+
+        local rightJoint = Instance.new("Part")
+        rightJoint.Name = "RightWingJoint"
+        rightJoint.Size = Vector3.new(0.25, 0.25, 0.25)
+        rightJoint.Transparency = 1
+        rightJoint.Anchored = false
+        rightJoint.CanCollide = false
+        rightJoint.Massless = true
+        rightJoint.CFrame = anchor.CFrame * CFrame.new(0.35, 0.1, 0)
+        rightJoint.Parent = model
+
+        local function createFeather(parentJoint, sideSign, index, total, isSecondary)
+            local t = (index - 1) / math.max(1, total - 1)
+            local length = isSecondary and (1.35 - t * 0.45) or (2.8 - t * 1.15)
+            local width = isSecondary and 0.24 or 0.34
+            local thickness = 0.065
+
+            local feather = Instance.new("Part")
+            feather.Name = (sideSign < 0 and "LFeather_" or "RFeather_") .. tostring(index)
+            feather.Size = Vector3.new(width, length, thickness)
+            feather.Material = Enum.Material.SmoothPlastic
+            feather.Color = Color3.fromRGB(255, 255, 255)
+            feather.CastShadow = false
+            feather.CanCollide = false
+            feather.Anchored = false
+            feather.Massless = true
+            feather.Parent = parentJoint
+
+            -- Лёгкое серебристо-золотистое свечение пера
+            local fLight = Instance.new("SurfaceLight")
+            fLight.Color = Color3.fromRGB(250, 242, 210)
+            fLight.Brightness = 0.65
+            fLight.Range = 4
+            fLight.Face = Enum.NormalId.Back
+            fLight.Parent = feather
+
+            local baseOffsetX = sideSign * (0.25 + index * (isSecondary and 0.16 or 0.22))
+            local baseOffsetY = (isSecondary and 0.18 or -0.25) - (t * (isSecondary and 0.22 or 0.72))
+            local baseOffsetZ = (isSecondary and -0.06 or 0.04) - (t * 0.12)
+            local baseRoll = sideSign * (-0.55 - t * 0.72)
+            local basePitch = isSecondary and 0.12 or -0.08
+
+            local baseRel = CFrame.new(baseOffsetX, baseOffsetY, baseOffsetZ)
+                * CFrame.Angles(basePitch, sideSign * (0.15 + t * 0.22), baseRoll)
+
+            feather.CFrame = parentJoint.CFrame * baseRel
+
+            local fWeld = Instance.new("Weld")
+            fWeld.Part0 = parentJoint
+            fWeld.Part1 = feather
+            fWeld.C0 = baseRel
+            fWeld.Parent = feather
+
+            return {
+                weld = fWeld,
+                baseRel = baseRel,
+                phase = index * 0.28 + (isSecondary and 1.2 or 0),
+                sideSign = sideSign
+            }
+        end
+
+        local feathers = {}
+        for i = 1, 11 do
+            table.insert(feathers, createFeather(leftJoint, -1, i, 11, false))
+            table.insert(feathers, createFeather(rightJoint, 1, i, 11, false))
+        end
+        for i = 1, 7 do
+            table.insert(feathers, createFeather(leftJoint, -1, i, 7, true))
+            table.insert(feathers, createFeather(rightJoint, 1, i, 7, true))
+        end
+
+        local lBaseC0 = CFrame.new(-0.35, 0.1, 0)
+        local rBaseC0 = CFrame.new(0.35, 0.1, 0)
+        local lJointWeld = Instance.new("Weld")
+        lJointWeld.Part0 = anchor
+        lJointWeld.Part1 = leftJoint
+        lJointWeld.C0 = lBaseC0
+        lJointWeld.Parent = leftJoint
+
+        local rJointWeld = Instance.new("Weld")
+        rJointWeld.Part0 = anchor
+        rJointWeld.Part1 = rightJoint
+        rJointWeld.C0 = rBaseC0
+        rJointWeld.Parent = rightJoint
+
+        local animTime = 0
+        angelWingsConn = RunService.RenderStepped:Connect(function(dt)
+            if not char or not char.Parent or not torso.Parent or not anchor.Parent then
+                removeAngelWings()
+                return
+            end
+            animTime += dt
+
+            -- Плавное раскрытие/складывание + взмахи вверх и вниз
+            local unfold = (math.sin(animTime * 1.15) + 1) * 0.5 -- 0 (сложено) -> 1 (раскрыто)
+            local flapWave = math.sin(animTime * 3.1)
+            local yawSpread = math.rad(14 + unfold * 42) + (flapWave * math.rad(12))
+            local flapRoll = flapWave * math.rad(14)
+
+            lJointWeld.C0 = lBaseC0 * CFrame.Angles(0, -yawSpread, flapRoll)
+            rJointWeld.C0 = rBaseC0 * CFrame.Angles(0, yawSpread, -flapRoll)
+
+            for _, fData in ipairs(feathers) do
+                local flutter = math.sin(animTime * 5.2 + fData.phase) * math.rad(4.5)
+                fData.weld.C0 = fData.baseRel * CFrame.Angles(flutter, 0, fData.sideSign * flutter * 0.6)
+            end
+        end)
+    end)
+end
+
+local setWingsUIFunc
+_, setWingsUIFunc = createModuleCard(visualsPage, "Ангельские крылья", "Белоснежные крылья за спиной с взмахами", "Белоснежные крылья за спиной с взмахами", function(state)
+    angelWingsEnabled = state
+    if angelWingsEnabled then
+        if player.Character then applyAngelWings(player.Character) end
+    else
+        removeAngelWings()
+    end
+end, false)
+setAngelWingsUIState = setWingsUIFunc
+
+player.CharacterAdded:Connect(function(char)
+    if auraEnabled then
+        task.delay(1, function()
+            applyActiveAura(char)
+        end)
+    end
+    if angelWingsEnabled then
+        task.delay(1, function()
+            applyAngelWings(char)
+        end)
+    end
+end)
+
 -- ВКЛАДКА TELEPORT (WEAKEST DUMMY + ИГРОКИ В СЕТИ)
 local tpHeaderLbl = Instance.new("TextLabel")
 tpHeaderLbl.Size = UDim2.new(1, -10, 0, 20)
@@ -2038,7 +2170,7 @@ tpHeaderLbl.Position = UDim2.new(0, 0, 0, 0)
 tpHeaderLbl.BackgroundTransparency = 1
 tpHeaderLbl.Font = Enum.Font.GothamBold
 tpHeaderLbl.Text = "Тренировка / NPC:"
-tpHeaderLbl.TextColor3 = THEME.TextPrimary
+tpHeaderLbl.TextColor3 = Color3.fromRGB(250, 220, 170)
 tpHeaderLbl.TextSize = 11
 tpHeaderLbl.TextXAlignment = Enum.TextXAlignment.Left
 tpHeaderLbl.ZIndex = 3
@@ -2047,14 +2179,14 @@ tpHeaderLbl.Parent = teleportPage
 local dummyTpBtn = Instance.new("TextButton")
 dummyTpBtn.Size = UDim2.new(1, -10, 0, 32)
 dummyTpBtn.Position = UDim2.new(0, 0, 0, 22)
-dummyTpBtn.BackgroundColor3 = THEME.NeonRed
+dummyTpBtn.BackgroundColor3 = Color3.fromRGB(255, 120, 0)
 dummyTpBtn.Text = "ТП к Weakest Dummy"
 dummyTpBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 dummyTpBtn.TextSize = 11
 dummyTpBtn.Font = Enum.Font.GothamBold
 dummyTpBtn.ZIndex = 3
 dummyTpBtn.Parent = teleportPage
-local dtbC = Instance.new("UICorner") dtbC.CornerRadius = UDim.new(0, 7) dtbC.Parent = dummyTpBtn
+local dtbC = Instance.new("UICorner") dtbC.CornerRadius = UDim.new(0, 6) dtbC.Parent = dummyTpBtn
 
 local function teleportToPosition(pos)
     pcall(function()
@@ -2084,7 +2216,7 @@ playersHeaderLbl.Position = UDim2.new(0, 0, 0, 62)
 playersHeaderLbl.BackgroundTransparency = 1
 playersHeaderLbl.Font = Enum.Font.GothamBold
 playersHeaderLbl.Text = "Игроки в сети (нажми для ТП):"
-playersHeaderLbl.TextColor3 = THEME.TextPrimary
+playersHeaderLbl.TextColor3 = Color3.fromRGB(250, 220, 170)
 playersHeaderLbl.TextSize = 11
 playersHeaderLbl.TextXAlignment = Enum.TextXAlignment.Left
 playersHeaderLbl.ZIndex = 3
@@ -2108,15 +2240,14 @@ refreshTeleportList = function()
             local pBtn = Instance.new("TextButton")
             pBtn.Size = UDim2.new(1, 0, 0, 28)
             pBtn.Position = UDim2.new(0, 0, 0, yOff)
-            pBtn.BackgroundColor3 = THEME.BgCard
+            pBtn.BackgroundColor3 = Color3.fromRGB(50, 28, 14)
             pBtn.Text = p.DisplayName .. " (@" .. p.Name .. ")"
-            pBtn.TextColor3 = THEME.TextPrimary
+            pBtn.TextColor3 = Color3.fromRGB(255, 220, 170)
             pBtn.TextSize = 10
             pBtn.Font = Enum.Font.GothamBold
             pBtn.ZIndex = 4
             pBtn.Parent = tpPlayersList
-            local pbC = Instance.new("UICorner") pbC.CornerRadius = UDim.new(0, 7) pbC.Parent = pBtn
-            addNeonStroke(pBtn, 1, 0.5, THEME.AccentRed)
+            local pbC = Instance.new("UICorner") pbC.CornerRadius = UDim.new(0, 6) pbC.Parent = pBtn
 
             pBtn.MouseButton1Click:Connect(function()
                 local tChar = p.Character
@@ -2247,78 +2378,76 @@ langLbl.Size = UDim2.new(1, 0, 0, 24)
 langLbl.Position = UDim2.new(0, 0, 0, 10)
 langLbl.BackgroundTransparency = 1
 langLbl.Font = Enum.Font.GothamBold
-langLbl.Text = "Выберите язык / Select Language:"
-langLbl.TextColor3 = THEME.TextPrimary
+langLbl.Text = "Выберите язык:"
+langLbl.TextColor3 = Color3.fromRGB(250, 220, 170)
 langLbl.TextSize = 12
 langLbl.TextXAlignment = Enum.TextXAlignment.Left
 langLbl.ZIndex = 3
 langLbl.Parent = languagePage
 
 local ruBtn = Instance.new("TextButton")
-ruBtn.Size = UDim2.new(0, 114, 0, 32)
+ruBtn.Size = UDim2.new(0, 110, 0, 32)
 ruBtn.Position = UDim2.new(0, 0, 0, 42)
-ruBtn.BackgroundColor3 = THEME.NeonRed
+ruBtn.BackgroundColor3 = Color3.fromRGB(255, 120, 0)
 ruBtn.Text = "🇷🇺 Русский"
 ruBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 ruBtn.TextSize = 11
 ruBtn.Font = Enum.Font.GothamBold
 ruBtn.ZIndex = 3
 ruBtn.Parent = languagePage
-local rbC = Instance.new("UICorner") rbC.CornerRadius = UDim.new(0, 7) rbC.Parent = ruBtn
+local rbC = Instance.new("UICorner") rbC.CornerRadius = UDim.new(0, 6) rbC.Parent = ruBtn
 
 local enBtn = Instance.new("TextButton")
-enBtn.Size = UDim2.new(0, 114, 0, 32)
-enBtn.Position = UDim2.new(0, 124, 0, 42)
-enBtn.BackgroundColor3 = THEME.BgCard
-enBtn.Text = "🇬🇧 English"
-enBtn.TextColor3 = THEME.TextSecondary
+enBtn.Size = UDim2.new(0, 110, 0, 32)
+enBtn.Position = UDim2.new(0, 120, 0, 42)
+enBtn.BackgroundColor3 = Color3.fromRGB(50, 28, 14)
+enBtn.Text = "🇬🇧 Русский (RU)"
+enBtn.TextColor3 = Color3.fromRGB(200, 160, 120)
 enBtn.TextSize = 11
 enBtn.Font = Enum.Font.GothamBold
 enBtn.ZIndex = 3
 enBtn.Parent = languagePage
-local ebC = Instance.new("UICorner") ebC.CornerRadius = UDim.new(0, 7) ebC.Parent = enBtn
-addNeonStroke(enBtn, 1, 0.5, THEME.AccentRed)
+local ebC = Instance.new("UICorner") ebC.CornerRadius = UDim.new(0, 6) ebC.Parent = enBtn
 
 ruBtn.MouseButton1Click:Connect(function()
     currentLanguage = "RU"
-    ruBtn.BackgroundColor3 = THEME.NeonRed ruBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    enBtn.BackgroundColor3 = THEME.BgCard enBtn.TextColor3 = THEME.TextSecondary
+    ruBtn.BackgroundColor3 = Color3.fromRGB(255, 120, 0) ruBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    enBtn.BackgroundColor3 = Color3.fromRGB(50, 28, 14) enBtn.TextColor3 = Color3.fromRGB(200, 160, 120)
     updateAllTranslations()
-    showNotification("Language", "Установлен русский язык")
+    showNotification("Язык", "Установлен русский язык")
 end)
 
 enBtn.MouseButton1Click:Connect(function()
-    currentLanguage = "EN"
-    enBtn.BackgroundColor3 = THEME.NeonRed enBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    ruBtn.BackgroundColor3 = THEME.BgCard ruBtn.TextColor3 = THEME.TextSecondary
+    currentLanguage = "RU"
+    enBtn.BackgroundColor3 = Color3.fromRGB(255, 120, 0) enBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    ruBtn.BackgroundColor3 = Color3.fromRGB(50, 28, 14) ruBtn.TextColor3 = Color3.fromRGB(200, 160, 120)
     updateAllTranslations()
-    showNotification("Language", "English language selected")
+    showNotification("Язык", "Установлен русский язык")
 end)
 
 -- МЕНЕДЖЕР КОНФИГОВ
 local configsFolder = "MoneyHubConfigs"
 
 local configNameBox = Instance.new("TextBox")
-configNameBox.Size = UDim2.new(0, 144, 0, 28)
+configNameBox.Size = UDim2.new(0, 140, 0, 28)
 configNameBox.Position = UDim2.new(0, 0, 0, 10)
-configNameBox.BackgroundColor3 = THEME.BgCard
-configNameBox.BackgroundTransparency = 0.15
+configNameBox.BackgroundColor3 = Color3.fromRGB(48, 28, 14)
+configNameBox.BackgroundTransparency = 0.3
 configNameBox.PlaceholderText = "Имя конфига..."
-configNameBox.PlaceholderColor3 = THEME.TextMuted
+configNameBox.PlaceholderColor3 = Color3.fromRGB(170, 120, 70)
 configNameBox.Text = ""
-configNameBox.TextColor3 = THEME.TextPrimary
+configNameBox.TextColor3 = Color3.fromRGB(255, 220, 170)
 configNameBox.TextSize = 11
 configNameBox.Font = Enum.Font.Gotham
 configNameBox.ZIndex = 3
 configNameBox.Parent = configPage
 
-local cnCorner = Instance.new("UICorner") cnCorner.CornerRadius = UDim.new(0, 7) cnCorner.Parent = configNameBox
-addNeonStroke(configNameBox, 1, 0.45, THEME.AccentRed)
+local cnCorner = Instance.new("UICorner") cnCorner.CornerRadius = UDim.new(0, 6) cnCorner.Parent = configNameBox
 
 local createCfgBtn = Instance.new("TextButton")
-createCfgBtn.Size = UDim2.new(0, 82, 0, 28)
-createCfgBtn.Position = UDim2.new(0, 152, 0, 10)
-createCfgBtn.BackgroundColor3 = THEME.NeonRed
+createCfgBtn.Size = UDim2.new(0, 75, 0, 28)
+createCfgBtn.Position = UDim2.new(0, 145, 0, 10)
+createCfgBtn.BackgroundColor3 = Color3.fromRGB(255, 120, 0)
 createCfgBtn.Text = "OK / Создать"
 createCfgBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 createCfgBtn.TextSize = 10
@@ -2326,7 +2455,7 @@ createCfgBtn.Font = Enum.Font.GothamBold
 createCfgBtn.ZIndex = 3
 createCfgBtn.Parent = configPage
 
-local ccCorner = Instance.new("UICorner") ccCorner.CornerRadius = UDim.new(0, 7) ccCorner.Parent = createCfgBtn
+local ccCorner = Instance.new("UICorner") ccCorner.CornerRadius = UDim.new(0, 6) ccCorner.Parent = createCfgBtn
 
 local configListContainer = Instance.new("ScrollingFrame")
 configListContainer.Name = "ConfigListContainer"
@@ -2350,20 +2479,19 @@ local function refreshConfigList()
         local itemFrame = Instance.new("Frame")
         itemFrame.Size = UDim2.new(1, -5, 0, 36)
         itemFrame.Position = UDim2.new(0, 0, 0, yOffset)
-        itemFrame.BackgroundColor3 = THEME.BgCard
-        itemFrame.BackgroundTransparency = 0.15
+        itemFrame.BackgroundColor3 = Color3.fromRGB(50, 28, 14)
+        itemFrame.BackgroundTransparency = 0.3
         itemFrame.ZIndex = 3
         itemFrame.Parent = configListContainer
         
-        local itCorner = Instance.new("UICorner") itCorner.CornerRadius = UDim.new(0, 7) itCorner.Parent = itemFrame
-        addNeonStroke(itemFrame, 1, 0.5, THEME.AccentRed)
+        local itCorner = Instance.new("UICorner") itCorner.CornerRadius = UDim.new(0, 6) itCorner.Parent = itemFrame
         
         local lbl = Instance.new("TextLabel")
         lbl.Size = UDim2.new(0, 130, 1, 0)
         lbl.Position = UDim2.new(0, 10, 0, 0)
         lbl.BackgroundTransparency = 1
         lbl.Text = cfgName
-        lbl.TextColor3 = THEME.TextPrimary
+        lbl.TextColor3 = Color3.fromRGB(255, 220, 170)
         lbl.TextSize = 11
         lbl.Font = Enum.Font.GothamBold
         lbl.TextXAlignment = Enum.TextXAlignment.Left
@@ -2380,11 +2508,11 @@ local function refreshConfigList()
                 AimAssist = aimAssistEnabled, AimTarget = aimTargetPart, AimSmoothness = aimSmoothness,
                 SpeedHack = speedHackEnabled, WalkSpeed = walkSpeedValue, FakeDashEnabled = fakeDashEnabled, FakeDashKeyName = fakeDashKey.Name,
                 FakeDashMobile = fakeDashMobileBtnEnabled, Fullbright = fullbrightEnabled, ScriptVisuals = scriptVisualsEnabled,
-                WorldVisuals = worldVisualsEnabled, AuraEnabled = auraEnabled, AuraMode = selectedAuraMode, ParticleType = currentParticleType,
-                WorldParticleType = worldParticleType, WorldSpeed = worldSpeedMultiplier, Language = currentLanguage
+                WorldVisuals = worldVisualsEnabled, AuraEnabled = auraEnabled, AuraMode = selectedAuraMode, AngelWings = angelWingsEnabled,
+                ParticleType = currentParticleType, WorldParticleType = worldParticleType, WorldSpeed = worldSpeedMultiplier, Language = "RU"
             }
             writefile(configsFolder .. "/" .. cfgName .. ".json", HttpService:JSONEncode(data))
-            showNotification("Configs", "Сохранено: " .. cfgName)
+            showNotification("Конфиги", "Сохранено: " .. cfgName)
         end)
         
         loadBtn.MouseButton1Click:Connect(function()
@@ -2409,13 +2537,14 @@ local function refreshConfigList()
                 selectedAuraMode = data.AuraMode or "Noob"
                 if refreshAuraPreviewVisual then refreshAuraPreviewVisual() end
                 auraEnabled = data.AuraEnabled or false if setAuraUIState then setAuraUIState(auraEnabled, true) end
+                angelWingsEnabled = data.AngelWings or false if setAngelWingsUIState then setAngelWingsUIState(angelWingsEnabled, true) end
                 currentParticleType = data.ParticleType or "🌸"
                 worldParticleType = data.WorldParticleType or "🌸"
                 worldSpeedMultiplier = data.WorldSpeed or 1.0
-                currentLanguage = data.Language or "RU"
+                currentLanguage = "RU"
                 updateAllTranslations()
                 
-                showNotification("Configs", "Загружено: " .. cfgName)
+                showNotification("Конфиги", "Загружено: " .. cfgName)
             end)
         end)
         
@@ -2423,7 +2552,7 @@ local function refreshConfigList()
             if delfile then
                 delfile(configsFolder .. "/" .. cfgName .. ".json")
                 refreshConfigList()
-                showNotification("Configs", "Удалено: " .. cfgName)
+                showNotification("Конфиги", "Удалено: " .. cfgName)
             end
         end)
         
@@ -2436,10 +2565,10 @@ createCfgBtn.MouseButton1Click:Connect(function()
     local name = configNameBox.Text
     if name and name ~= "" then
         if not isfolder(configsFolder) then makefolder(configsFolder) end
-        writefile(configsFolder .. "/" .. name .. ".json", HttpService:JSONEncode({ SelectedStyle = "", AutoFarm = false, SafeZoneOnHit = true, AimAssist = false, AimTarget = "Torso", AimSmoothness = 0.2, SpeedHack = false, WalkSpeed = 32, FakeDashEnabled = false, FakeDashKeyName = "Q", FakeDashMobile = false, Fullbright = false, ScriptVisuals = false, WorldVisuals = false, AuraEnabled = false, AuraMode = "Noob", ParticleType = "🌸", WorldParticleType = "🌸", WorldSpeed = 1.0, Language = "RU" }))
+        writefile(configsFolder .. "/" .. name .. ".json", HttpService:JSONEncode({ SelectedStyle = "", AutoFarm = false, SafeZoneOnHit = true, AimAssist = false, AimTarget = "Torso", AimSmoothness = 0.2, SpeedHack = false, WalkSpeed = 32, FakeDashEnabled = false, FakeDashKeyName = "Q", FakeDashMobile = false, Fullbright = false, ScriptVisuals = false, WorldVisuals = false, AuraEnabled = false, AuraMode = "Noob", AngelWings = false, ParticleType = "🌸", WorldParticleType = "🌸", WorldSpeed = 1.0, Language = "RU" }))
         configNameBox.Text = ""
         refreshConfigList()
-        showNotification("Configs", "Создан конфиг")
+        showNotification("Конфиги", "Создан конфиг")
     end
 end)
 
@@ -2604,16 +2733,15 @@ end)
 enableDragging(mainFrame, topBarArea)
 
 local floatBtn = Instance.new("Frame")
-floatBtn.Size = UDim2.new(0, 38, 0, 38)
-floatBtn.Position = UDim2.new(0.5, -19, 0, -50)
-floatBtn.BackgroundColor3 = THEME.BgCard
-floatBtn.BackgroundTransparency = 0.1
+floatBtn.Size = UDim2.new(0, 36, 0, 36)
+floatBtn.Position = UDim2.new(0.5, -18, 0, -50)
+floatBtn.BackgroundColor3 = Color3.fromRGB(54, 34, 18)
+floatBtn.BackgroundTransparency = 0.15
 floatBtn.Visible = false
 floatBtn.ZIndex = 100
 floatBtn.Parent = screenGui
 
 local floatCorner = Instance.new("UICorner") floatCorner.CornerRadius = UDim.new(1, 0) floatCorner.Parent = floatBtn
-addNeonStroke(floatBtn, 1.4, 0.2, THEME.NeonRed)
 local floatTexture = Instance.new("ImageLabel") floatTexture.Size = UDim2.new(0, 22, 0, 22) floatTexture.Position = UDim2.new(0.5, -11, 0.5, -11) floatTexture.BackgroundTransparency = 1 floatTexture.Image = TEXTURE_ID floatTexture.ZIndex = 101 floatTexture.Parent = floatBtn
 local floatClick = Instance.new("TextButton") floatClick.Size = UDim2.new(1, 0, 1, 0) floatClick.BackgroundTransparency = 1 floatClick.Text = "" floatClick.ZIndex = 102 floatClick.Parent = floatBtn
 
@@ -2622,7 +2750,7 @@ enableDragging(floatBtn, floatBtn)
 local function animateOpen()
     mainFrame.Position = hiddenPosition
     mainFrame.BackgroundTransparency = 1
-    TweenService:Create(mainFrame, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Position = targetPosition, BackgroundTransparency = 0.03}):Play()
+    TweenService:Create(mainFrame, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Position = targetPosition, BackgroundTransparency = 0.05}):Play()
 end
 
 minBtn.MouseButton1Click:Connect(function()
@@ -2630,12 +2758,12 @@ minBtn.MouseButton1Click:Connect(function()
     task.wait(0.3)
     mainFrame.Visible = false
     floatBtn.Visible = true
-    floatBtn.Position = UDim2.new(0.5, -19, 0, -50)
-    TweenService:Create(floatBtn, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Position = UDim2.new(0.5, -19, 0.05, 0)}):Play()
+    floatBtn.Position = UDim2.new(0.5, -18, 0, -50)
+    TweenService:Create(floatBtn, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Position = UDim2.new(0.5, -18, 0.05, 0)}):Play()
 end)
 
 floatClick.MouseButton1Click:Connect(function()
-    TweenService:Create(floatBtn, TweenInfo.new(0.2), {Position = UDim2.new(0.5, -19, 0, -50)}):Play()
+    TweenService:Create(floatBtn, TweenInfo.new(0.2), {Position = UDim2.new(0.5, -18, 0, -50)}):Play()
     task.wait(0.2)
     floatBtn.Visible = false
     mainFrame.Visible = true
