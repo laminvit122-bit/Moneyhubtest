@@ -12,6 +12,7 @@ local Lighting = game:GetService("Lighting")
 local CoreGui = game:GetService("CoreGui")
 local SoundService = game:GetService("SoundService")
 local VirtualInputManager = game:GetService("VirtualInputManager")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
@@ -664,7 +665,7 @@ local fullbrightEnabled = false
 local scriptVisualsEnabled = false
 local worldVisualsEnabled = false
 local auraEnabled = false
-local selectedAuraMode = "Noob" -- "Noob" ("Нуб-аура") или "Fire" ("Огневая аура")
+local selectedAuraMode = "Noob"
 local angelWingsEnabled = false
 
 local currentParticleType = "🌸"
@@ -1532,15 +1533,60 @@ end, true, function(panel)
 end)
 setWorldVisualsUIState = setWorldVisualsUIFunc
 
--- СИСТЕМА АУР: "НУБ-АУРА" И "ОГНЕВАЯ АУРА"
+-- СИСТЕМА АУР И ПРЕДПРОСМОТРА (СКРИПТ ОТ CHATGPT)
 local activeAuraConnection = nil
 local activeAuraFolder = nil
-local previewAuraFolder = nil
 
-local function buildAuraVisualsOnTarget(char, root, parentContainer, mode)
+local previewAuraFolder = nil
+local previewConnection = nil
+local previewCharModel = nil
+local previewWorld = nil
+local previewCamera = nil
+
+local function disconnect(connection)
+    if connection then
+        connection:Disconnect()
+    end
+end
+
+local function removeActiveAura()
+    disconnect(activeAuraConnection)
+    activeAuraConnection = nil
+
+    if activeAuraFolder then
+        activeAuraFolder:Destroy()
+        activeAuraFolder = nil
+    end
+
+    local char = player.Character
+    if not char then return end
+
+    local root = char:FindFirstChild("HumanoidRootPart")
+    if not root then return end
+
+    for _, name in ipairs({
+        "AuraAttachment",
+        "FlameCoreAttachment",
+        "FlameTonguesAttachment",
+        "EnergySmokeAttachment",
+        "PurpleFlameLight"
+    }) do
+        local object = root:FindFirstChild(name)
+        if object then
+            object:Destroy()
+        end
+    end
+end
+
+local function buildRealAura(char, root, mode)
     local folder = Instance.new("Folder")
-    folder.Name = (mode == "Fire") and "FirePurpleAura" or "NoobPsyAura"
-    folder.Parent = parentContainer
+    folder.Name = mode == "Fire" and "FirePurpleAura" or "NoobPsyAura"
+    folder.Parent = Workspace
+
+    local pulse = 0
+    local light
+    local highlight
+    local emitter
 
     if mode == "Fire" then
         local coreAtt = Instance.new("Attachment")
@@ -1558,199 +1604,658 @@ local function buildAuraVisualsOnTarget(char, root, parentContainer, mode)
         smokeAtt.Position = Vector3.new(0, 0.2, 0)
         smokeAtt.Parent = root
 
-        local coreFlame = Instance.new("ParticleEmitter")
-        coreFlame.Name = "CoreFlame"
-        coreFlame.Texture = "rbxasset://textures/particles/fire_main.dds"
-        coreFlame.Color = ColorSequence.new({
+        local core = Instance.new("ParticleEmitter")
+        core.Name = "CoreFlame"
+        core.Texture = "rbxasset://textures/particles/fire_main.dds"
+        core.Color = ColorSequence.new({
             ColorSequenceKeypoint.new(0, Color3.fromRGB(220, 140, 255)),
             ColorSequenceKeypoint.new(0.45, Color3.fromRGB(155, 45, 255)),
             ColorSequenceKeypoint.new(1, Color3.fromRGB(88, 12, 185))
         })
-        coreFlame.LightEmission = 0.95
-        coreFlame.LightInfluence = 0.15
-        coreFlame.Rate = 65
-        coreFlame.Lifetime = NumberRange.new(0.45, 0.85)
-        coreFlame.Speed = NumberRange.new(3.5, 6.5)
-        coreFlame.SpreadAngle = Vector2.new(28, 28)
-        coreFlame.Acceleration = Vector3.new(0, 12, 0)
-        coreFlame.RotSpeed = NumberRange.new(-90, 90)
-        coreFlame.Rotation = NumberRange.new(-35, 35)
-        coreFlame.Size = NumberSequence.new({
+        core.LightEmission = 1
+        core.Rate = 65
+        core.Lifetime = NumberRange.new(0.45, 0.85)
+        core.Speed = NumberRange.new(3.5, 6.5)
+        core.SpreadAngle = Vector2.new(28, 28)
+        core.Acceleration = Vector3.new(0, 12, 0)
+        core.RotSpeed = NumberRange.new(-90, 90)
+        core.Size = NumberSequence.new({
             NumberSequenceKeypoint.new(0, 1.3),
             NumberSequenceKeypoint.new(0.4, 2.2),
             NumberSequenceKeypoint.new(1, 0.1)
         })
-        coreFlame.Transparency = NumberSequence.new({
-            NumberSequenceKeypoint.new(0, 0.2),
-            NumberSequenceKeypoint.new(0.65, 0.35),
-            NumberSequenceKeypoint.new(1, 1)
-        })
-        coreFlame.Parent = coreAtt
+        core.Parent = coreAtt
 
-        local outerFlame = Instance.new("ParticleEmitter")
-        outerFlame.Name = "OuterFlameTongues"
-        outerFlame.Texture = "rbxasset://textures/particles/fire_main.dds"
-        outerFlame.Color = ColorSequence.new({
+        local outer = Instance.new("ParticleEmitter")
+        outer.Name = "OuterFlame"
+        outer.Texture = "rbxasset://textures/particles/fire_main.dds"
+        outer.Color = ColorSequence.new({
             ColorSequenceKeypoint.new(0, Color3.fromRGB(115, 20, 210)),
             ColorSequenceKeypoint.new(0.55, Color3.fromRGB(68, 8, 145)),
             ColorSequenceKeypoint.new(1, Color3.fromRGB(28, 3, 68))
         })
-        outerFlame.LightEmission = 0.55
-        outerFlame.LightInfluence = 0.35
-        outerFlame.Rate = 55
-        outerFlame.Lifetime = NumberRange.new(0.6, 1.1)
-        outerFlame.Speed = NumberRange.new(2.5, 5.2)
-        outerFlame.SpreadAngle = Vector2.new(45, 45)
-        outerFlame.Acceleration = Vector3.new(0, 9.5, 0)
-        outerFlame.RotSpeed = NumberRange.new(-110, 110)
-        outerFlame.Rotation = NumberRange.new(-60, 60)
-        outerFlame.Size = NumberSequence.new({
+        outer.LightEmission = 0.8
+        outer.Rate = 55
+        outer.Lifetime = NumberRange.new(0.6, 1.1)
+        outer.Speed = NumberRange.new(2.5, 5.2)
+        outer.SpreadAngle = Vector2.new(45, 45)
+        outer.Acceleration = Vector3.new(0, 9.5, 0)
+        outer.RotSpeed = NumberRange.new(-110, 110)
+        outer.Size = NumberSequence.new({
             NumberSequenceKeypoint.new(0, 1.8),
             NumberSequenceKeypoint.new(0.5, 2.9),
             NumberSequenceKeypoint.new(1, 0.2)
         })
-        outerFlame.Transparency = NumberSequence.new({
-            NumberSequenceKeypoint.new(0, 0.28),
-            NumberSequenceKeypoint.new(0.7, 0.5),
-            NumberSequenceKeypoint.new(1, 1)
-        })
-        outerFlame.Parent = tonguesAtt
+        outer.Parent = tonguesAtt
 
-        local energySmoke = Instance.new("ParticleEmitter")
-        energySmoke.Name = "EnergySmoke"
-        energySmoke.Texture = "rbxasset://textures/particles/smoke_main.dds"
-        energySmoke.Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0, Color3.fromRGB(92, 24, 168)),
-            ColorSequenceKeypoint.new(0.6, Color3.fromRGB(45, 10, 92)),
-            ColorSequenceKeypoint.new(1, Color3.fromRGB(18, 4, 38))
-        })
-        energySmoke.LightEmission = 0.2
-        energySmoke.LightInfluence = 0.5
-        energySmoke.Rate = 28
-        energySmoke.Lifetime = NumberRange.new(0.8, 1.4)
-        energySmoke.Speed = NumberRange.new(1.8, 3.8)
-        energySmoke.SpreadAngle = Vector2.new(55, 55)
-        energySmoke.Acceleration = Vector3.new(0, 7, 0)
-        energySmoke.RotSpeed = NumberRange.new(-45, 45)
-        energySmoke.Size = NumberSequence.new({
+        local smoke = Instance.new("ParticleEmitter")
+        smoke.Name = "EnergySmoke"
+        smoke.Texture = "rbxasset://textures/particles/smoke_main.dds"
+        smoke.Color = ColorSequence.new(
+            Color3.fromRGB(92, 24, 168),
+            Color3.fromRGB(18, 4, 38)
+        )
+        smoke.Rate = 28
+        smoke.Lifetime = NumberRange.new(0.8, 1.4)
+        smoke.Speed = NumberRange.new(1.8, 3.8)
+        smoke.SpreadAngle = Vector2.new(55, 55)
+        smoke.Acceleration = Vector3.new(0, 7, 0)
+        smoke.Size = NumberSequence.new({
             NumberSequenceKeypoint.new(0, 1.4),
             NumberSequenceKeypoint.new(0.6, 2.7),
             NumberSequenceKeypoint.new(1, 3.4)
         })
-        energySmoke.Transparency = NumberSequence.new({
-            NumberSequenceKeypoint.new(0, 0.55),
-            NumberSequenceKeypoint.new(0.5, 0.72),
-            NumberSequenceKeypoint.new(1, 1)
-        })
-        energySmoke.Parent = smokeAtt
+        smoke.Parent = smokeAtt
 
-        local light = Instance.new("PointLight")
+        light = Instance.new("PointLight")
         light.Name = "PurpleFlameLight"
         light.Color = Color3.fromRGB(155, 55, 255)
         light.Brightness = 4
         light.Range = 14
         light.Parent = root
 
-        local highlight = Instance.new("Highlight")
+        highlight = Instance.new("Highlight")
         highlight.Adornee = char
         highlight.FillColor = Color3.fromRGB(130, 35, 245)
         highlight.OutlineColor = Color3.fromRGB(195, 110, 255)
-        highlight.FillTransparency = 0.72
-        highlight.OutlineTransparency = 0.25
+        highlight.FillTransparency = 0.65
+        highlight.OutlineTransparency = 0.15
         highlight.Parent = folder
 
-        local pulseTime = 0
-        local conn = RunService.RenderStepped:Connect(function(dt)
-            if not char or not char.Parent or not root.Parent then return end
-            pulseTime += dt * 3.2
-            local wave = (math.sin(pulseTime) + 1) * 0.5
-            light.Brightness = 3.2 + wave * 1.8
-            highlight.FillTransparency = 0.78 - wave * 0.12
-        end)
-
-        return folder, conn
     else
-        local Colors = {
-            Color3.fromRGB(125, 50, 255),
-            Color3.fromRGB(65, 160, 255),
-            Color3.fromRGB(200, 100, 255)
-        }
+        local attachment = Instance.new("Attachment")
+        attachment.Name = "AuraAttachment"
+        attachment.Parent = root
 
-        local Attachment = Instance.new("Attachment")
-        Attachment.Name = "AuraAttachment"
-        Attachment.Parent = root
+        emitter = Instance.new("ParticleEmitter")
+        emitter.Name = "NoobAuraParticles"
+        emitter.Texture = "rbxasset://textures/particles/sparkles_main.dds"
 
-        local Emitter = Instance.new("ParticleEmitter")
-        Emitter.Texture = "rbxasset://textures/particles/sparkles_main.dds"
-        Emitter.Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0, Colors[1]),
-            ColorSequenceKeypoint.new(0.5, Colors[2]),
-            ColorSequenceKeypoint.new(1, Colors[3])
+        emitter.Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(125, 50, 255)),
+            ColorSequenceKeypoint.new(0.5, Color3.fromRGB(65, 160, 255)),
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(200, 100, 255))
         })
-        Emitter.LightEmission = 1
-        Emitter.LightInfluence = 0
-        Emitter.Rate = 110
-        Emitter.Lifetime = NumberRange.new(0.5, 1.2)
-        Emitter.Speed = NumberRange.new(2, 5)
-        Emitter.SpreadAngle = Vector2.new(180, 180)
-        Emitter.RotSpeed = NumberRange.new(-180, 180)
-        Emitter.Size = NumberSequence.new({
-            NumberSequenceKeypoint.new(0, 0),
-            NumberSequenceKeypoint.new(0.5, 0.8),
+
+        emitter.LightEmission = 1
+        emitter.LightInfluence = 0
+        emitter.Rate = 110
+        emitter.Lifetime = NumberRange.new(0.5, 1.2)
+        emitter.Speed = NumberRange.new(2, 5)
+        emitter.SpreadAngle = Vector2.new(180, 180)
+        emitter.RotSpeed = NumberRange.new(-180, 180)
+
+        emitter.Size = NumberSequence.new({
+            NumberSequenceKeypoint.new(0, 0.2),
+            NumberSequenceKeypoint.new(0.5, 0.95),
             NumberSequenceKeypoint.new(1, 0)
         })
-        Emitter.Parent = Attachment
 
-        local Highlight = Instance.new("Highlight")
-        Highlight.Adornee = char
-        Highlight.FillColor = Colors[1]
-        Highlight.OutlineColor = Colors[2]
-        Highlight.FillTransparency = 0.75
-        Highlight.OutlineTransparency = 0.15
-        Highlight.Parent = folder
+        emitter.Parent = attachment
 
-        local Time = 0
-        local conn = RunService.RenderStepped:Connect(function(Delta)
-            if not char or not char.Parent or not root.Parent then return end
-            Time += Delta * 2
-            local Pulse = (math.sin(Time) + 1) / 2
-            Highlight.FillTransparency = 0.85 - Pulse * 0.15
-            Highlight.OutlineTransparency = 0.4 - Pulse * 0.25
-            Emitter.Rate = 80 + Pulse * 70
-        end)
+        highlight = Instance.new("Highlight")
+        highlight.Adornee = char
+        highlight.FillColor = Color3.fromRGB(125, 50, 255)
+        highlight.OutlineColor = Color3.fromRGB(65, 160, 255)
+        highlight.FillTransparency = 0.68
+        highlight.OutlineTransparency = 0.1
+        highlight.Parent = folder
+    end
 
-        return folder, conn
+    local connection = RunService.RenderStepped:Connect(function(dt)
+        if not char.Parent or not root.Parent then
+            return
+        end
+
+        pulse += dt * 3
+
+        local wave = (math.sin(pulse) + 1) * 0.5
+
+        if light then
+            light.Brightness = 3.2 + wave * 1.8
+        end
+
+        if highlight then
+            highlight.FillTransparency = 0.8 - wave * 0.15
+            highlight.OutlineTransparency = 0.35 - wave * 0.2
+        end
+
+        if emitter then
+            emitter.Rate = 80 + wave * 70
+        end
+    end)
+
+    return folder, connection
+end
+
+local function applyActiveAura(char)
+    removeActiveAura()
+
+    if not auraEnabled or not char then
+        return
+    end
+
+    local root = char:FindFirstChild("HumanoidRootPart")
+    if not root then
+        return
+    end
+
+    activeAuraFolder, activeAuraConnection =
+        buildRealAura(char, root, selectedAuraMode)
+end
+
+local function createNeonPart(parent, name, color, size)
+    local part = Instance.new("Part")
+
+    part.Name = name
+    part.Shape = Enum.PartType.Ball
+    part.Size = size
+    part.Material = Enum.Material.Neon
+    part.Color = color
+    part.Transparency = 0.12
+
+    part.Anchored = true
+    part.CanCollide = false
+    part.CanTouch = false
+    part.CanQuery = false
+    part.CastShadow = false
+
+    part.Parent = parent
+
+    return part
+end
+
+local function clearPreviewAura()
+    disconnect(previewConnection)
+    previewConnection = nil
+
+    if previewAuraFolder then
+        previewAuraFolder:Destroy()
+        previewAuraFolder = nil
     end
 end
 
-local function removeActiveAura()
-    pcall(function()
-        if activeAuraConnection then
-            activeAuraConnection:Disconnect()
-            activeAuraConnection = nil
+local function buildPreviewAura()
+    clearPreviewAura()
+
+    if not previewCharModel or not previewWorld then
+        return
+    end
+
+    local root = previewCharModel:FindFirstChild("HumanoidRootPart")
+    if not root then
+        return
+    end
+
+    local folder = Instance.new("Folder")
+    folder.Name = "PreviewAuraEffects"
+    folder.Parent = previewWorld
+
+    previewAuraFolder = folder
+
+    local objects = {}
+    local time = 0
+
+    if selectedAuraMode == "Noob" then
+
+        local colors = {
+            Color3.fromRGB(125, 50, 255),
+            Color3.fromRGB(65, 160, 255),
+            Color3.fromRGB(200, 100, 255),
+            Color3.fromRGB(170, 100, 255)
+        }
+
+        for i = 1, 16 do
+            local angle = (i / 16) * math.pi * 2
+
+            local part = createNeonPart(
+                folder,
+                "NoobParticle_" .. i,
+                colors[(i % #colors) + 1],
+                Vector3.new(0.17, 0.17, 0.17)
+            )
+
+            table.insert(objects, {
+                part = part,
+                angle = angle,
+                height = (i % 5) * 0.55 - 0.8,
+                radius = 1.15 + (i % 3) * 0.16,
+                speed = 0.8 + (i % 4) * 0.15,
+                size = 0.12 + (i % 3) * 0.045
+            })
         end
-        if activeAuraFolder then
-            activeAuraFolder:Destroy()
-            activeAuraFolder = nil
+
+    elseif selectedAuraMode == "Fire" then
+
+        local colors = {
+            Color3.fromRGB(210, 100, 255),
+            Color3.fromRGB(160, 35, 255),
+            Color3.fromRGB(105, 15, 210),
+            Color3.fromRGB(240, 160, 255)
+        }
+
+        for i = 1, 20 do
+            local angle = (i / 20) * math.pi * 2
+
+            local part = createNeonPart(
+                folder,
+                "FireParticle_" .. i,
+                colors[(i % #colors) + 1],
+                Vector3.new(0.2, 0.55, 0.2)
+            )
+
+            table.insert(objects, {
+                part = part,
+                angle = angle,
+                height = (i % 6) * 0.4 - 1,
+                radius = 0.95 + (i % 4) * 0.2,
+                speed = 1.1 + (i % 5) * 0.18,
+                size = 0.2 + (i % 3) * 0.07
+            })
         end
-        local char = player.Character
-        if char and char:FindFirstChild("HumanoidRootPart") then
-            local root = char.HumanoidRootPart
-            for _, name in ipairs({"AuraAttachment", "FlameCoreAttachment", "FlameTonguesAttachment", "EnergySmokeAttachment", "PurpleFlameLight"}) do
-                local obj = root:FindFirstChild(name)
-                if obj then obj:Destroy() end
+
+        for i = 1, 8 do
+            local part = createNeonPart(
+                folder,
+                "FireGlow_" .. i,
+                Color3.fromRGB(155, 45, 255),
+                Vector3.new(0.32, 0.32, 0.32)
+            )
+
+            part.Transparency = 0.45
+
+            table.insert(objects, {
+                part = part,
+                angle = (i / 8) * math.pi * 2,
+                height = -1.3 + (i % 4) * 0.8,
+                radius = 1.35,
+                speed = -0.6,
+                size = 0.32
+            })
+        end
+    end
+
+    previewConnection = RunService.RenderStepped:Connect(function(dt)
+        if not root.Parent or not folder.Parent then
+            return
+        end
+
+        time += dt
+
+        for _, data in ipairs(objects) do
+            local angle = data.angle + time * data.speed
+
+            local height = data.height +
+                math.sin(time * 2 + data.angle) * 0.22
+
+            local radius = data.radius +
+                math.sin(time * 1.5 + data.angle) * 0.08
+
+            local x = math.cos(angle) * radius
+            local z = math.sin(angle) * radius
+
+            local position = root.CFrame:PointToWorldSpace(
+                Vector3.new(x, height, z)
+            )
+
+            local part = data.part
+
+            part.Position = position
+
+            local pulse = (math.sin(time * 4 + data.angle) + 1) / 2
+
+            local scale = data.size * (0.8 + pulse * 0.4)
+
+            if selectedAuraMode == "Fire" then
+                part.Size = Vector3.new(
+                    scale,
+                    scale * 2.2,
+                    scale
+                )
+
+                part.CFrame = CFrame.new(position) *
+                    CFrame.Angles(
+                        math.sin(time * 3 + data.angle) * 0.3,
+                        angle,
+                        math.cos(time * 2 + data.angle) * 0.3
+                    )
+            else
+                part.Size = Vector3.new(scale, scale, scale)
             end
         end
     end)
 end
 
-local function applyActiveAura(char)
-    pcall(function()
-        removeActiveAura()
-        if not auraEnabled or not char then return end
-        local root = char:WaitForChild("HumanoidRootPart", 2)
-        if not root then return end
-        activeAuraFolder, activeAuraConnection = buildAuraVisualsOnTarget(char, root, Workspace, selectedAuraMode)
+local function buildAuraPreviewUI(panel)
+    local pickLbl = Instance.new("TextLabel")
+    pickLbl.Name = "AuraTitle"
+    pickLbl.Size = UDim2.new(1, 0, 0, 18)
+    pickLbl.Position = UDim2.new(0, 0, 0, 0)
+    pickLbl.BackgroundTransparency = 1
+    pickLbl.Font = Enum.Font.GothamBold
+    pickLbl.Text = "Выберите ауру:"
+    pickLbl.TextColor3 = Color3.fromRGB(240, 225, 255)
+    pickLbl.TextSize = 11
+    pickLbl.TextXAlignment = Enum.TextXAlignment.Left
+    pickLbl.ZIndex = 11
+    pickLbl.Parent = panel
+
+    local noobBtn = Instance.new("TextButton")
+    noobBtn.Name = "NoobAuraButton"
+    noobBtn.Size = UDim2.new(0, 92, 0, 25)
+    noobBtn.Position = UDim2.new(0, 0, 0, 20)
+    noobBtn.BackgroundColor3 = Color3.fromRGB(120, 65, 220)
+    noobBtn.Text = "Нуб-аура"
+    noobBtn.TextColor3 = Color3.new(1, 1, 1)
+    noobBtn.TextSize = 10
+    noobBtn.Font = Enum.Font.GothamBold
+    noobBtn.ZIndex = 11
+    noobBtn.Parent = panel
+
+    Instance.new("UICorner", noobBtn).CornerRadius = UDim.new(0, 7)
+
+    local fireBtn = Instance.new("TextButton")
+    fireBtn.Name = "FireAuraButton"
+    fireBtn.Size = UDim2.new(0, 98, 0, 25)
+    fireBtn.Position = UDim2.new(0, 97, 0, 20)
+    fireBtn.BackgroundColor3 = Color3.fromRGB(35, 25, 50)
+    fireBtn.Text = "Огневая аура"
+    fireBtn.TextColor3 = Color3.fromRGB(210, 185, 230)
+    fireBtn.TextSize = 10
+    fireBtn.Font = Enum.Font.GothamBold
+    fireBtn.ZIndex = 11
+    fireBtn.Parent = panel
+
+    Instance.new("UICorner", fireBtn).CornerRadius = UDim.new(0, 7)
+
+    local previewContainer = Instance.new("Frame")
+    previewContainer.Name = "PreviewContainer"
+    previewContainer.Size = UDim2.new(0, 195, 0, 152)
+    previewContainer.Position = UDim2.new(0, 0, 0, 50)
+    previewContainer.BackgroundColor3 = Color3.fromRGB(17, 13, 29)
+    previewContainer.BackgroundTransparency = 0
+    previewContainer.BorderSizePixel = 0
+    previewContainer.ClipsDescendants = true
+    previewContainer.ZIndex = 11
+    previewContainer.Parent = panel
+
+    Instance.new("UICorner", previewContainer).CornerRadius = UDim.new(0, 10)
+
+    local stroke = Instance.new("UIStroke")
+    stroke.Color = Color3.fromRGB(110, 65, 180)
+    stroke.Transparency = 0.35
+    stroke.Thickness = 1
+    stroke.Parent = previewContainer
+
+    local prevTitle = Instance.new("TextLabel")
+    prevTitle.Size = UDim2.new(1, -12, 0, 18)
+    prevTitle.Position = UDim2.new(0, 8, 0, 4)
+    prevTitle.BackgroundTransparency = 1
+    prevTitle.Font = Enum.Font.GothamBold
+    prevTitle.Text = "LIVE PREVIEW"
+    prevTitle.TextColor3 = Color3.fromRGB(210, 175, 255)
+    prevTitle.TextSize = 10
+    prevTitle.TextXAlignment = Enum.TextXAlignment.Left
+    prevTitle.ZIndex = 12
+    prevTitle.Parent = previewContainer
+
+    local viewport = Instance.new("ViewportFrame")
+    viewport.Name = "AuraViewport"
+    viewport.Size = UDim2.new(1, -10, 1, -28)
+    viewport.Position = UDim2.new(0, 5, 0, 23)
+    viewport.BackgroundColor3 = Color3.fromRGB(19, 13, 32)
+    viewport.BackgroundTransparency = 0
+    viewport.Ambient = Color3.fromRGB(180, 165, 210)
+    viewport.LightColor = Color3.fromRGB(255, 240, 255)
+    viewport.LightDirection = Vector3.new(-0.5, -1, -0.5)
+    viewport.ZIndex = 12
+    viewport.Parent = previewContainer
+
+    Instance.new("UICorner", viewport).CornerRadius = UDim.new(0, 8)
+
+    previewWorld = Instance.new("WorldModel")
+    previewWorld.Name = "AuraPreviewWorld"
+    previewWorld.Parent = viewport
+
+    previewCamera = Instance.new("Camera")
+    previewCamera.Name = "AuraPreviewCamera"
+    previewCamera.FieldOfView = 40
+    previewCamera.Parent = viewport
+
+    viewport.CurrentCamera = previewCamera
+
+    local function createPreviewCharacter()
+        if previewCharModel then
+            previewCharModel:Destroy()
+            previewCharModel = nil
+        end
+
+        local character = player.Character
+
+        if not character then
+            return false
+        end
+
+        local oldArchivable = character.Archivable
+        character.Archivable = true
+
+        local success, clone = pcall(function()
+            return character:Clone()
+        end)
+
+        character.Archivable = oldArchivable
+
+        if not success or not clone then
+            warn("Не удалось создать копию персонажа")
+            return false
+        end
+
+        for _, object in ipairs(clone:GetDescendants()) do
+            if object:IsA("Script")
+                or object:IsA("LocalScript")
+                or object:IsA("ModuleScript") then
+
+                object:Destroy()
+
+            elseif object:IsA("BasePart") then
+                object.Anchored = true
+                object.CanCollide = false
+                object.CanTouch = false
+                object.CanQuery = false
+
+            elseif object:IsA("Humanoid") then
+                object.DisplayDistanceType =
+                    Enum.HumanoidDisplayDistanceType.None
+            end
+        end
+
+        clone.Name = "AuraPreviewCharacter"
+        clone.Parent = previewWorld
+
+        previewCharModel = clone
+
+        local root = clone:FindFirstChild("HumanoidRootPart")
+
+        if not root then
+            clone:Destroy()
+            previewCharModel = nil
+            return false
+        end
+
+        clone.PrimaryPart = root
+        clone:PivotTo(CFrame.new(0, 0, 0))
+
+        local boxCF, boxSize = clone:GetBoundingBox()
+
+        local center = boxCF.Position
+
+        local distance = math.max(
+            6,
+            boxSize.Y * 1.45,
+            boxSize.X * 2
+        )
+
+        previewCamera.CFrame = CFrame.lookAt(
+            center + Vector3.new(0, 0.8, distance),
+            center + Vector3.new(0, 0.4, 0)
+        )
+
+        return true
+    end
+
+    local modelRotation = 0
+    local draggingModel = false
+    local lastPosition = Vector2.new()
+
+    local function updateRotation()
+        if not previewCharModel then
+            return
+        end
+
+        previewCharModel:PivotTo(
+            CFrame.new(0, 0, 0) *
+            CFrame.Angles(0, modelRotation, 0)
+        )
+    end
+
+    local function rebuildPreviewAura()
+        buildPreviewAura()
+    end
+
+    refreshAuraPreviewVisual = function()
+        local isFire = selectedAuraMode == "Fire"
+
+        noobBtn.BackgroundColor3 = not isFire
+            and Color3.fromRGB(120, 65, 220)
+            or Color3.fromRGB(35, 25, 50)
+
+        fireBtn.BackgroundColor3 = isFire
+            and Color3.fromRGB(150, 55, 230)
+            or Color3.fromRGB(35, 25, 50)
+
+        noobBtn.TextColor3 = not isFire
+            and Color3.new(1, 1, 1)
+            or Color3.fromRGB(190, 175, 205)
+
+        fireBtn.TextColor3 = isFire
+            and Color3.new(1, 1, 1)
+            or Color3.fromRGB(190, 175, 205)
+
+        rebuildPreviewAura()
+
+        if auraEnabled and player.Character then
+            applyActiveAura(player.Character)
+        end
+    end
+
+    noobBtn.MouseButton1Click:Connect(function()
+        selectedAuraMode = "Noob"
+        refreshAuraPreviewVisual()
+    end)
+
+    fireBtn.MouseButton1Click:Connect(function()
+        selectedAuraMode = "Fire"
+        refreshAuraPreviewVisual()
+    end)
+
+    viewport.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1
+            or input.UserInputType == Enum.UserInputType.Touch then
+
+            draggingModel = true
+            lastPosition = Vector2.new(
+                input.Position.X,
+                input.Position.Y
+            )
+        end
+    end)
+
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1
+            or input.UserInputType == Enum.UserInputType.Touch then
+
+            draggingModel = false
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if not draggingModel then
+            return
+        end
+
+        if input.UserInputType ~= Enum.UserInputType.MouseMovement
+            and input.UserInputType ~= Enum.UserInputType.Touch then
+            return
+        end
+
+        local currentPosition = Vector2.new(
+            input.Position.X,
+            input.Position.Y
+        )
+
+        local delta = currentPosition - lastPosition
+
+        lastPosition = currentPosition
+
+        modelRotation += delta.X * 0.012
+
+        updateRotation()
+    end)
+
+    if createPreviewCharacter() then
+        refreshAuraPreviewVisual()
+    end
+
+    player.CharacterAdded:Connect(function()
+        task.wait(1)
+
+        if not panel.Parent then
+            return
+        end
+
+        if createPreviewCharacter() then
+            refreshAuraPreviewVisual()
+        end
+
+        if auraEnabled then
+            applyActiveAura(player.Character)
+        end
+    end)
+
+    panel.Destroying:Connect(function()
+        clearPreviewAura()
+
+        if previewCharModel then
+            previewCharModel:Destroy()
+            previewCharModel = nil
+        end
+
+        if previewWorld then
+            previewWorld:Destroy()
+            previewWorld = nil
+        end
+
+        draggingModel = false
     end)
 end
 
@@ -1764,200 +2269,8 @@ _, setAuraUIFunc = createModuleCard(visualsPage, "Аура", "Эффекты в�
         removeActiveAura()
     end
 end, true, function(panel)
-    local pickLbl = Instance.new("TextLabel")
-    pickLbl.Size = UDim2.new(1, 0, 0, 15)
-    pickLbl.Position = UDim2.new(0, 0, 0, 0)
-    pickLbl.BackgroundTransparency = 1
-    pickLbl.Font = Enum.Font.GothamBold
-    pickLbl.Text = "Выберите ауру:"
-    pickLbl.TextColor3 = Color3.fromRGB(250, 220, 170)
-    pickLbl.TextSize = 10
-    pickLbl.TextXAlignment = Enum.TextXAlignment.Left
-    pickLbl.ZIndex = 11
-    pickLbl.Parent = panel
-
-    local noobBtn = Instance.new("TextButton")
-    noobBtn.Size = UDim2.new(0, 92, 0, 22)
-    noobBtn.Position = UDim2.new(0, 0, 0, 17)
-    noobBtn.BackgroundColor3 = Color3.fromRGB(255, 120, 0)
-    noobBtn.Text = "Нуб-аура"
-    noobBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    noobBtn.TextSize = 10
-    noobBtn.Font = Enum.Font.GothamBold
-    noobBtn.ZIndex = 11
-    noobBtn.Parent = panel
-    local nbC = Instance.new("UICorner") nbC.CornerRadius = UDim.new(0, 6) nbC.Parent = noobBtn
-
-    local fireBtn = Instance.new("TextButton")
-    fireBtn.Size = UDim2.new(0, 96, 0, 22)
-    fireBtn.Position = UDim2.new(0, 98, 0, 17)
-    fireBtn.BackgroundColor3 = Color3.fromRGB(50, 28, 14)
-    fireBtn.Text = "Огневая аура"
-    fireBtn.TextColor3 = Color3.fromRGB(200, 160, 120)
-    fireBtn.TextSize = 10
-    fireBtn.Font = Enum.Font.GothamBold
-    fireBtn.ZIndex = 11
-    fireBtn.Parent = panel
-    local frC = Instance.new("UICorner") frC.CornerRadius = UDim.new(0, 6) frC.Parent = fireBtn
-
-    local previewContainer = Instance.new("Frame")
-    previewContainer.Name = "PreviewContainer"
-    previewContainer.Size = UDim2.new(0, 195, 0, 126)
-    previewContainer.Position = UDim2.new(0, 0, 0, 44)
-    previewContainer.BackgroundColor3 = Color3.fromRGB(30, 16, 8)
-    previewContainer.BackgroundTransparency = 0.2
-    previewContainer.BorderSizePixel = 0
-    previewContainer.ZIndex = 11
-    previewContainer.Parent = panel
-
-    local pcCorner = Instance.new("UICorner") pcCorner.CornerRadius = UDim.new(0, 8) pcCorner.Parent = previewContainer
-
-    local prevTitle = Instance.new("TextLabel")
-    prevTitle.Size = UDim2.new(1, -10, 0, 16)
-    prevTitle.Position = UDim2.new(0, 6, 0, 3)
-    prevTitle.BackgroundTransparency = 1
-    prevTitle.Font = Enum.Font.GothamBold
-    prevTitle.Text = "Предпросмотр"
-    prevTitle.TextColor3 = Color3.fromRGB(250, 220, 170)
-    prevTitle.TextSize = 10
-    prevTitle.TextXAlignment = Enum.TextXAlignment.Left
-    prevTitle.ZIndex = 12
-    prevTitle.Parent = previewContainer
-    table.insert(translatableCards, {lbl = prevTitle, ru = "Предпросмотр", en = "Предпросмотр"})
-
-    local viewport = Instance.new("ViewportFrame")
-    viewport.Size = UDim2.new(1, -10, 1, -34)
-    viewport.Position = UDim2.new(0, 5, 0, 19)
-    viewport.BackgroundTransparency = 1
-    viewport.ZIndex = 12
-    viewport.Parent = previewContainer
-
-    local vpCam = Instance.new("Camera")
-    viewport.CurrentCamera = vpCam
-    vpCam.Parent = viewport
-
-    local previewCharModel = nil
-    local previewConn = nil
-
-    local function rebuildPreviewAura()
-        if previewConn then
-            previewConn:Disconnect()
-            previewConn = nil
-        end
-        if previewAuraFolder then
-            previewAuraFolder:Destroy()
-            previewAuraFolder = nil
-        end
-        if not previewCharModel then return end
-        local root = previewCharModel:FindFirstChild("HumanoidRootPart") or previewCharModel:FindFirstChild("Torso")
-        if not root then return end
-
-        for _, name in ipairs({"AuraAttachment", "FlameCoreAttachment", "FlameTonguesAttachment", "EnergySmokeAttachment", "PurpleFlameLight"}) do
-            local existing = root:FindFirstChild(name)
-            if existing then existing:Destroy() end
-        end
-
-        previewAuraFolder, previewConn = buildAuraVisualsOnTarget(previewCharModel, root, viewport, selectedAuraMode)
-    end
-
-    pcall(function()
-        if player.Character then
-            player.Character.Archivable = true
-            previewCharModel = player.Character:Clone()
-            for _, c in ipairs(previewCharModel:GetChildren()) do
-                if c:IsA("Script") or c:IsA("LocalScript") or c:IsA("ModuleScript") then
-                    c:Destroy()
-                end
-            end
-            previewCharModel.Parent = viewport
-
-            local root = previewCharModel:FindFirstChild("HumanoidRootPart") or previewCharModel:FindFirstChild("Torso")
-            if root then
-                vpCam.CFrame = CFrame.new(root.Position + Vector3.new(0, 1.4, 4.4), root.Position + Vector3.new(0, 0.4, 0))
-                local vpLight = Instance.new("PointLight")
-                vpLight.Brightness = 3
-                vpLight.Range = 16
-                vpLight.Parent = root
-                rebuildPreviewAura()
-            end
-        end
-    end)
-
-    refreshAuraPreviewVisual = function()
-        local isFire = (selectedAuraMode == "Fire")
-        noobBtn.BackgroundColor3 = (not isFire) and Color3.fromRGB(255, 120, 0) or Color3.fromRGB(50, 28, 14)
-        noobBtn.TextColor3 = (not isFire) and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(200, 160, 120)
-        fireBtn.BackgroundColor3 = isFire and Color3.fromRGB(255, 120, 0) or Color3.fromRGB(50, 28, 14)
-        fireBtn.TextColor3 = isFire and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(200, 160, 120)
-        rebuildPreviewAura()
-        if auraEnabled and player.Character then
-            applyActiveAura(player.Character)
-        end
-    end
-
-    noobBtn.MouseButton1Click:Connect(function()
-        selectedAuraMode = "Noob"
-        refreshAuraPreviewVisual()
-        showNotification("Аура", "Выбрана: Нуб-аура")
-    end)
-
-    fireBtn.MouseButton1Click:Connect(function()
-        selectedAuraMode = "Fire"
-        refreshAuraPreviewVisual()
-        showNotification("Аура", "Выбрана: Огневая аура")
-    end)
-
-    local draggingModel = false
-    local lastMousePos = Vector2.new()
-    local modelRot = 0
-
-    local rotButton = Instance.new("TextButton")
-    rotButton.Size = UDim2.new(1, 0, 1, 0)
-    rotButton.BackgroundTransparency = 1
-    rotButton.Text = ""
-    rotButton.ZIndex = 15
-    rotButton.Parent = viewport
-
-    rotButton.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            draggingModel = true
-            lastMousePos = input.Position
-        end
-    end)
-
-    UserInputService.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            draggingModel = false
-        end
-    end)
-
-    UserInputService.InputChanged:Connect(function(input)
-        if draggingModel and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-            local delta = input.Position - lastMousePos
-            lastMousePos = input.Position
-            modelRot = modelRot + (delta.X * 0.01)
-            if previewCharModel then
-                local root = previewCharModel:FindFirstChild("HumanoidRootPart") or previewCharModel:FindFirstChild("Torso")
-                if root then
-                    previewCharModel:SetPrimaryPartCFrame(CFrame.new(root.Position) * CFrame.Angles(0, modelRot, 0))
-                end
-            end
-        end
-    end)
-
-    local hintLbl = Instance.new("TextLabel")
-    hintLbl.Size = UDim2.new(1, -10, 0, 14)
-    hintLbl.Position = UDim2.new(0, 5, 1, -15)
-    hintLbl.BackgroundTransparency = 1
-    hintLbl.Font = Enum.Font.Gotham
-    hintLbl.Text = "Тащите, чтобы повернуть"
-    hintLbl.TextColor3 = Color3.fromRGB(160, 120, 80)
-    hintLbl.TextSize = 8
-    hintLbl.TextXAlignment = Enum.TextXAlignment.Center
-    hintLbl.ZIndex = 12
-    hintLbl.Parent = previewContainer
-    table.insert(translatableCards, {lbl = hintLbl, ru = "Тащите, чтобы повернуть", en = "Тащите, чтобы повернуть"})
-end, 246)
+    buildAuraPreviewUI(panel)
+end, 278)
 setAuraUIState = setAuraUIFunc
 
 player.CharacterAdded:Connect(function(char)
@@ -1968,7 +2281,7 @@ player.CharacterAdded:Connect(function(char)
     end
 end)
 
--- ОБЪЁМНЫЕ БЕЛОСНЕЖНЫЕ АНГЕЛЬСКИЕ КРЫЛЬЯ (ОТДЕЛЬНЫЕ ПЕРЬЯ + СЕРЕБРИСТО-ЗОЛОТИСТОЕ СВЕЧЕНИЕ)
+-- РОВНЫЕ СИММЕТРИЧНЫЕ АНГЕЛЬСКИЕ КРЫЛЬЯ НА СПИНЕ (ВЫНЕСЕНЫ ЧУТЬ ПОДАЛЬШЕ НАЗАД)
 local angelWingsModel = nil
 local angelWingsConn = nil
 
@@ -1998,6 +2311,7 @@ local function applyAngelWings(char)
         model.Parent = Workspace
         angelWingsModel = model
 
+        -- Смещаем якорь на +0.92 по локальной оси Z (строго за спину, чтобы не было внутри персонажа)
         local anchor = Instance.new("Part")
         anchor.Name = "WingsAnchor"
         anchor.Size = Vector3.new(0.4, 0.4, 0.4)
@@ -2005,7 +2319,7 @@ local function applyAngelWings(char)
         anchor.Anchored = false
         anchor.CanCollide = false
         anchor.Massless = true
-        anchor.CFrame = torso.CFrame * CFrame.new(0, 0.35, 0.62)
+        anchor.CFrame = torso.CFrame * CFrame.new(0, 0.25, 0.92)
         anchor.Parent = model
         model.PrimaryPart = anchor
 
@@ -2016,9 +2330,12 @@ local function applyAngelWings(char)
 
         local softLight = Instance.new("PointLight")
         softLight.Color = Color3.fromRGB(255, 248, 225)
-        softLight.Brightness = 2.4
-        softLight.Range = 11
+        softLight.Brightness = 2.2
+        softLight.Range = 10
         softLight.Parent = anchor
+
+        local lBaseC0 = CFrame.new(-0.36, 0.10, 0.05)
+        local rBaseC0 = CFrame.new(0.36, 0.10, 0.05)
 
         local leftJoint = Instance.new("Part")
         leftJoint.Name = "LeftWingJoint"
@@ -2027,7 +2344,7 @@ local function applyAngelWings(char)
         leftJoint.Anchored = false
         leftJoint.CanCollide = false
         leftJoint.Massless = true
-        leftJoint.CFrame = anchor.CFrame * CFrame.new(-0.35, 0.1, 0)
+        leftJoint.CFrame = anchor.CFrame * lBaseC0
         leftJoint.Parent = model
 
         local rightJoint = Instance.new("Part")
@@ -2037,70 +2354,9 @@ local function applyAngelWings(char)
         rightJoint.Anchored = false
         rightJoint.CanCollide = false
         rightJoint.Massless = true
-        rightJoint.CFrame = anchor.CFrame * CFrame.new(0.35, 0.1, 0)
+        rightJoint.CFrame = anchor.CFrame * rBaseC0
         rightJoint.Parent = model
 
-        local function createFeather(parentJoint, sideSign, index, total, isSecondary)
-            local t = (index - 1) / math.max(1, total - 1)
-            local length = isSecondary and (1.35 - t * 0.45) or (2.8 - t * 1.15)
-            local width = isSecondary and 0.24 or 0.34
-            local thickness = 0.065
-
-            local feather = Instance.new("Part")
-            feather.Name = (sideSign < 0 and "LFeather_" or "RFeather_") .. tostring(index)
-            feather.Size = Vector3.new(width, length, thickness)
-            feather.Material = Enum.Material.SmoothPlastic
-            feather.Color = Color3.fromRGB(255, 255, 255)
-            feather.CastShadow = false
-            feather.CanCollide = false
-            feather.Anchored = false
-            feather.Massless = true
-            feather.Parent = parentJoint
-
-            local fLight = Instance.new("SurfaceLight")
-            fLight.Color = Color3.fromRGB(250, 242, 210)
-            fLight.Brightness = 0.65
-            fLight.Range = 4
-            fLight.Face = Enum.NormalId.Back
-            fLight.Parent = feather
-
-            local baseOffsetX = sideSign * (0.25 + index * (isSecondary and 0.16 or 0.22))
-            local baseOffsetY = (isSecondary and 0.18 or -0.25) - (t * (isSecondary and 0.22 or 0.72))
-            local baseOffsetZ = (isSecondary and -0.06 or 0.04) - (t * 0.12)
-            local baseRoll = sideSign * (-0.55 - t * 0.72)
-            local basePitch = isSecondary and 0.12 or -0.08
-
-            local baseRel = CFrame.new(baseOffsetX, baseOffsetY, baseOffsetZ)
-                * CFrame.Angles(basePitch, sideSign * (0.15 + t * 0.22), baseRoll)
-
-            feather.CFrame = parentJoint.CFrame * baseRel
-
-            local fWeld = Instance.new("Weld")
-            fWeld.Part0 = parentJoint
-            fWeld.Part1 = feather
-            fWeld.C0 = baseRel
-            fWeld.Parent = feather
-
-            return {
-                weld = fWeld,
-                baseRel = baseRel,
-                phase = index * 0.28 + (isSecondary and 1.2 or 0),
-                sideSign = sideSign
-            }
-        end
-
-        local feathers = {}
-        for i = 1, 11 do
-            table.insert(feathers, createFeather(leftJoint, -1, i, 11, false))
-            table.insert(feathers, createFeather(rightJoint, 1, i, 11, false))
-        end
-        for i = 1, 7 do
-            table.insert(feathers, createFeather(leftJoint, -1, i, 7, true))
-            table.insert(feathers, createFeather(rightJoint, 1, i, 7, true))
-        end
-
-        local lBaseC0 = CFrame.new(-0.35, 0.1, 0)
-        local rBaseC0 = CFrame.new(0.35, 0.1, 0)
         local lJointWeld = Instance.new("Weld")
         lJointWeld.Part0 = anchor
         lJointWeld.Part1 = leftJoint
@@ -2113,6 +2369,58 @@ local function applyAngelWings(char)
         rJointWeld.C0 = rBaseC0
         rJointWeld.Parent = rightJoint
 
+        -- sideSign: -1 для левого крыла (-X), +1 для правого крыла (+X)
+        local function createFeather(parentJoint, sideSign, index, total, isSecondary)
+            local t = (index - 1) / math.max(1, total - 1)
+            local length = isSecondary and (1.30 - t * 0.38) or (2.55 - t * 0.95)
+            local width = isSecondary and 0.23 or 0.30
+            local thickness = 0.06
+
+            local feather = Instance.new("Part")
+            feather.Name = (sideSign < 0 and "LFeather_" or "RFeather_") .. tostring(index)
+            feather.Size = Vector3.new(width, length, thickness)
+            feather.Material = Enum.Material.SmoothPlastic
+            feather.Color = Color3.fromRGB(255, 255, 255)
+            feather.CastShadow = false
+            feather.CanCollide = false
+            feather.Anchored = false
+            feather.Massless = true
+            feather.Parent = parentJoint
+
+            local spanX = sideSign * (0.24 + index * (isSecondary and 0.15 or 0.20))
+            local dropY = (isSecondary and 0.14 or -0.16) - (t * (isSecondary and 0.18 or 0.60))
+            local backZ = (isSecondary and 0.06 or 0.16) + (t * 0.12)
+
+            local fanAngleZ = -sideSign * (0.64 + t * 0.64)
+            local sweepAngleY = sideSign * (0.14 + t * 0.16)
+
+            local baseRel = CFrame.new(spanX, dropY, backZ) * CFrame.Angles(0.04, sweepAngleY, fanAngleZ)
+            feather.CFrame = parentJoint.CFrame * baseRel
+
+            local fWeld = Instance.new("Weld")
+            fWeld.Part0 = parentJoint
+            fWeld.Part1 = feather
+            fWeld.C0 = baseRel
+            fWeld.Parent = feather
+
+            return {
+                weld = fWeld,
+                baseRel = baseRel,
+                phase = index * 0.25 + (isSecondary and 1.1 or 0),
+                sideSign = sideSign
+            }
+        end
+
+        local feathers = {}
+        for i = 1, 10 do
+            table.insert(feathers, createFeather(leftJoint, -1, i, 10, false))
+            table.insert(feathers, createFeather(rightJoint, 1, i, 10, false))
+        end
+        for i = 1, 6 do
+            table.insert(feathers, createFeather(leftJoint, -1, i, 6, true))
+            table.insert(feathers, createFeather(rightJoint, 1, i, 6, true))
+        end
+
         local animTime = 0
         angelWingsConn = RunService.RenderStepped:Connect(function(dt)
             if not char or not char.Parent or not torso.Parent or not anchor.Parent then
@@ -2121,17 +2429,16 @@ local function applyAngelWings(char)
             end
             animTime += dt
 
-            local unfold = (math.sin(animTime * 1.15) + 1) * 0.5
-            local flapWave = math.sin(animTime * 3.1)
-            local yawSpread = math.rad(14 + unfold * 42) + (flapWave * math.rad(12))
-            local flapRoll = flapWave * math.rad(14)
+            local flap = math.sin(animTime * 3.0)
+            local openAngleY = math.rad(28) + flap * math.rad(14)
+            local flapAngleZ = flap * math.rad(12)
 
-            lJointWeld.C0 = lBaseC0 * CFrame.Angles(0, -yawSpread, flapRoll)
-            rJointWeld.C0 = rBaseC0 * CFrame.Angles(0, yawSpread, -flapRoll)
+            lJointWeld.C0 = lBaseC0 * CFrame.Angles(0, -openAngleY, flapAngleZ)
+            rJointWeld.C0 = rBaseC0 * CFrame.Angles(0, openAngleY, -flapAngleZ)
 
             for _, fData in ipairs(feathers) do
-                local flutter = math.sin(animTime * 5.2 + fData.phase) * math.rad(4.5)
-                fData.weld.C0 = fData.baseRel * CFrame.Angles(flutter, 0, fData.sideSign * flutter * 0.6)
+                local flutter = math.sin(animTime * 5.0 + fData.phase) * math.rad(4)
+                fData.weld.C0 = fData.baseRel * CFrame.Angles(flutter, 0, -fData.sideSign * flutter * 0.5)
             end
         end)
     end)
@@ -2671,7 +2978,7 @@ RunService.RenderStepped:Connect(function()
     if not autoFarmEnabled or isEvadingDamage or not target or not target.Character then return end
     local enemyRoot = target.Character:FindFirstChild("HumanoidRootPart")
     if enemyRoot then
-        local backPos = enemyRoot.CFrame * CFrame.new(0, 0, 2)
+        local backPos = enemyRoot.CFrame * CFrame.new(0, 0, 2.2)
         root.CFrame = CFrame.lookAt(backPos.Position, enemyRoot.Position)
     end
 end)
@@ -2709,51 +3016,87 @@ player.CharacterAdded:Connect(setupHealthListener)
 local function executeActionKey(keyCode)
     pcall(function()
         VirtualInputManager:SendKeyEvent(true, keyCode, false, game)
-        task.wait(0.03)
+        task.wait(0.025)
         VirtualInputManager:SendKeyEvent(false, keyCode, false, game)
     end)
 end
 
-local function performNormalAttack()
+-- НАДЁЖНЫЙ ОБЫЧНЫЙ УДАР (M1 / ЦЕНТР ЭКРАНА / TOOL / РЕМОУТЫ БАЗОВЫХ УДАРОВ)
+local function performNormalAttack(enemyChar)
     pcall(function()
         local char = player.Character
         if char then
             local tool = char:FindFirstChildOfClass("Tool")
             if tool then
-                tool:Activate()
+                pcall(function() tool:Activate() end)
             end
         end
-        VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 0)
+
+        local centerX = (camera and camera.ViewportSize.X or 1280) * 0.5
+        local centerY = (camera and camera.ViewportSize.Y or 720) * 0.5
+
+        VirtualInputManager:SendMouseMoveEvent(centerX, centerY, game)
+        VirtualInputManager:SendMouseButtonEvent(centerX, centerY, 0, true, game, 1)
         task.wait(0.03)
-        VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 0)
+        VirtualInputManager:SendMouseButtonEvent(centerX, centerY, 0, false, game, 1)
+
+        local remotesRoot = ReplicatedStorage:FindFirstChild("Remotes") or ReplicatedStorage:FindFirstChild("Events") or ReplicatedStorage
+        if remotesRoot then
+            for _, obj in ipairs(remotesRoot:GetDescendants()) do
+                if obj:IsA("RemoteEvent") then
+                    local lower = obj.Name:lower()
+                    if lower:find("punch") or lower:find("m1") or lower:find("attack") or lower:find("hit") or lower:find("combat") then
+                        pcall(function() obj:FireServer(enemyChar) end)
+                        pcall(function() obj:FireServer() end)
+                    end
+                end
+            end
+        end
     end)
 end
 
+-- Постоянный спам обычных ударов при сближении с целью (не ждёт КД способностей)
 task.spawn(function()
     while true do
-        task.wait(0.1)
+        task.wait(0.14)
         if autoFarmEnabled and currentTarget and currentTarget.Character and not isEvadingDamage then
             pcall(function()
-                local char = player.Character local enemyChar = currentTarget.Character
+                local char = player.Character
+                local enemyChar = currentTarget.Character
                 if not char or not enemyChar then return end
-                local myRoot = char:FindFirstChild("HumanoidRootPart") local enemyRoot = enemyChar:FindFirstChild("HumanoidRootPart")
+                local myRoot = char:FindFirstChild("HumanoidRootPart")
+                local enemyRoot = enemyChar:FindFirstChild("HumanoidRootPart")
                 if not myRoot or not enemyRoot then return end
-                
-                if (myRoot.Position - enemyRoot.Position).Magnitude <= 10 then
-                    local actionRand = math.random(1, 10)
-                    if actionRand <= 4 then
-                        performNormalAttack()
-                    elseif actionRand == 5 then
-                        executeActionKey(Enum.KeyCode.One)
-                    elseif actionRand == 6 then
-                        executeActionKey(Enum.KeyCode.Two)
-                    elseif actionRand == 7 then
-                        executeActionKey(Enum.KeyCode.Three)
-                    elseif actionRand == 8 then
-                        executeActionKey(Enum.KeyCode.Four)
-                    elseif actionRand >= 9 then
-                        executeActionKey(Enum.KeyCode.G)
-                    end
+
+                if (myRoot.Position - enemyRoot.Position).Magnitude <= 12 then
+                    performNormalAttack(enemyChar)
+                end
+            end)
+        else
+            task.wait(0.25)
+        end
+    end
+end)
+
+-- Применение способностей (1-4 и G) поверх обычных ударов
+task.spawn(function()
+    local abilityKeys = { Enum.KeyCode.One, Enum.KeyCode.Two, Enum.KeyCode.Three, Enum.KeyCode.Four, Enum.KeyCode.G }
+    local nextIdx = 1
+    while true do
+        task.wait(0.55)
+        if autoFarmEnabled and currentTarget and currentTarget.Character and not isEvadingDamage then
+            pcall(function()
+                local char = player.Character
+                local enemyChar = currentTarget.Character
+                if not char or not enemyChar then return end
+                local myRoot = char:FindFirstChild("HumanoidRootPart")
+                local enemyRoot = enemyChar:FindFirstChild("HumanoidRootPart")
+                if not myRoot or not enemyRoot then return end
+
+                if (myRoot.Position - enemyRoot.Position).Magnitude <= 12 then
+                    local keyToPress = abilityKeys[nextIdx]
+                    nextIdx = (nextIdx % #abilityKeys) + 1
+                    executeActionKey(keyToPress)
                 end
             end)
         else
