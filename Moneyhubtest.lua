@@ -268,7 +268,7 @@ local function showNotification(title, stateText)
     end)
 end
 
--- ГЛАВНОЕ ОКНО (ИСХОДНЫЙ КОРИЧНЕВО-ОРАНЖЕВЫЙ ЦВЕТ)
+-- ГЛАВНОЕ ОКНО (РОДНОЙ КОРИЧНЕВО-ОРАНЖЕВЫЙ ЦВЕТ)
 local targetPosition = UDim2.new(0.5, -320, 0.5, -205)
 local hiddenPosition = UDim2.new(0.5, -320, 0.5, 380)
 
@@ -379,7 +379,7 @@ teleportTabBtn.Parent = sidebar
 local teleportTabCorner = Instance.new("UICorner") teleportTabCorner.CornerRadius = UDim.new(0, 6) teleportTabCorner.Parent = teleportTabBtn
 local teleportIconImg = Instance.new("ImageLabel") teleportIconImg.Size = UDim2.new(0, 14, 0, 14) teleportIconImg.Position = UDim2.new(0, 12, 0, 6) teleportIconImg.BackgroundTransparency = 1 teleportIconImg.Image = TELEPORT_ICON teleportIconImg.ZIndex = 4 teleportIconImg.Parent = teleportTabBtn
 
--- СЕКЦИЯ SETTINGS (Language + Configs) — выровнено по левому краю
+-- СЕКЦИЯ SETTINGS (Language + Configs)
 local settingsIconImg = Instance.new("ImageLabel") settingsIconImg.Size = UDim2.new(0, 14, 0, 14) settingsIconImg.Position = UDim2.new(0, 12, 0, 174) settingsIconImg.BackgroundTransparency = 1 settingsIconImg.Image = SETTINGS_ICON settingsIconImg.ZIndex = 3 settingsIconImg.Parent = sidebar
 local settingsHeader = Instance.new("TextLabel") settingsHeader.Size = UDim2.new(0, 100, 0, 20) settingsHeader.Position = UDim2.new(0, 32, 0, 171) settingsHeader.BackgroundTransparency = 1 settingsHeader.Font = Enum.Font.GothamBold settingsHeader.Text = "Settings" settingsHeader.TextColor3 = Color3.fromRGB(210, 150, 90) settingsHeader.TextSize = 11 settingsHeader.TextXAlignment = Enum.TextXAlignment.Left settingsHeader.ZIndex = 3 settingsHeader.Parent = sidebar
 
@@ -1424,7 +1424,7 @@ end, true, function(panel)
 
     local btn1 = Instance.new("TextButton") btn1.Size = UDim2.new(0, 32, 0, 24) btn1.Position = UDim2.new(0, 0, 0, 22) btn1.BackgroundColor3 = Color3.fromRGB(255, 120, 0) btn1.Text = "🌸" btn1.TextColor3 = Color3.fromRGB(255, 255, 255) btn1.TextSize = 12 btn1.Font = Enum.Font.GothamBold btn1.ZIndex = 11 btn1.Parent = panel local c1 = Instance.new("UICorner") c1.CornerRadius = UDim.new(0, 6) c1.Parent = btn1
     local btn2 = Instance.new("TextButton") btn2.Size = UDim2.new(0, 32, 0, 24) btn2.Position = UDim2.new(0, 36, 0, 22) btn2.BackgroundColor3 = Color3.fromRGB(50, 28, 14) btn2.Text = "❤️" btn2.TextColor3 = Color3.fromRGB(200, 160, 120) btn2.TextSize = 12 btn2.Font = Enum.Font.GothamBold btn2.ZIndex = 11 btn2.Parent = panel local c2 = Instance.new("UICorner") c2.CornerRadius = UDim.new(0, 6) c2.Parent = btn2
-    local btn3 = Instance.new("TextButton") btn3.Size = UDim2.new(0, 32, 0, 24) btn3.Position = UDim2.new(0, 72, 0, 22) btn3.BackgroundColor3 = Color3.fromRGB(50, 28, 14) btn3.Text = "⭐" btn3.TextColor3 = Color3.fromRGB(200, 160, 120) btn3.TextSize = 12 btn3.Font = Enum.Font.GothamBold btn3.ZIndex = 11 btn3.Parent = panel local c3 = Instance.new("UICorner") c3.CornerRadius = UDim.new(0, 6) c3.Parent = btn3
+    local btn3 = Instance.new("TextButton") btn3.Size = UDim2.new(0, 32, 0, 24) btn3.Position = UDim2.new(0, 72, 0, 22) btn3.BackgroundColor3 = Color3.fromRGB(50, 28, 14) btn3.Text = "⭐" btn3.TextColor3 = Color3.fromRGB(200, 160, 120) btn3.TextSize = 12 btn3.Font = Enum.Font.GothamBold btn3.ZIndex = 11 btn2.Parent = panel local c3 = Instance.new("UICorner") c3.CornerRadius = UDim.new(0, 6) c3.Parent = btn3
     local btn4 = Instance.new("TextButton") btn4.Size = UDim2.new(0, 38, 0, 24) btn4.Position = UDim2.new(0, 108, 0, 22) btn4.BackgroundColor3 = Color3.fromRGB(50, 28, 14) btn4.Text = "🍃" btn4.TextColor3 = Color3.fromRGB(200, 160, 120) btn4.TextSize = 12 btn4.Font = Enum.Font.GothamBold btn4.ZIndex = 11 btn4.Parent = panel local c4 = Instance.new("UICorner") c4.CornerRadius = UDim.new(0, 6) c4.Parent = btn4
     local btn5 = Instance.new("TextButton") btn5.Size = UDim2.new(0, 38, 0, 24) btn5.Position = UDim2.new(0, 150, 0, 22) btn5.BackgroundColor3 = Color3.fromRGB(50, 28, 14) btn5.Text = "❄️" btn5.TextColor3 = Color3.fromRGB(200, 160, 120) btn5.TextSize = 12 btn5.Font = Enum.Font.GothamBold btn5.ZIndex = 11 btn5.Parent = panel local c5 = Instance.new("UICorner") c5.CornerRadius = UDim.new(0, 6) c5.Parent = btn5
 
@@ -1533,7 +1533,7 @@ end, true, function(panel)
 end)
 setWorldVisualsUIState = setWorldVisualsUIFunc
 
--- СИСТЕМА АУР И ПРЕДПРОСМОТРА (СКРИПТ ОТ CHATGPT)
+-- СИСТЕМА АУР И ПРЕДПРОСМОТРА (ТОЧНЫЕ PARTICLES + РОДНОЙ ЦВЕТ ИНТЕРФЕЙСА)
 local activeAuraConnection = nil
 local activeAuraFolder = nil
 
@@ -1612,17 +1612,24 @@ local function buildRealAura(char, root, mode)
             ColorSequenceKeypoint.new(0.45, Color3.fromRGB(155, 45, 255)),
             ColorSequenceKeypoint.new(1, Color3.fromRGB(88, 12, 185))
         })
-        core.LightEmission = 1
+        core.LightEmission = 0.95
+        core.LightInfluence = 0.15
         core.Rate = 65
         core.Lifetime = NumberRange.new(0.45, 0.85)
         core.Speed = NumberRange.new(3.5, 6.5)
         core.SpreadAngle = Vector2.new(28, 28)
         core.Acceleration = Vector3.new(0, 12, 0)
         core.RotSpeed = NumberRange.new(-90, 90)
+        core.Rotation = NumberRange.new(-35, 35)
         core.Size = NumberSequence.new({
             NumberSequenceKeypoint.new(0, 1.3),
             NumberSequenceKeypoint.new(0.4, 2.2),
             NumberSequenceKeypoint.new(1, 0.1)
+        })
+        core.Transparency = NumberSequence.new({
+            NumberSequenceKeypoint.new(0, 0.2),
+            NumberSequenceKeypoint.new(0.65, 0.35),
+            NumberSequenceKeypoint.new(1, 1)
         })
         core.Parent = coreAtt
 
@@ -1634,36 +1641,52 @@ local function buildRealAura(char, root, mode)
             ColorSequenceKeypoint.new(0.55, Color3.fromRGB(68, 8, 145)),
             ColorSequenceKeypoint.new(1, Color3.fromRGB(28, 3, 68))
         })
-        outer.LightEmission = 0.8
+        outer.LightEmission = 0.55
+        outer.LightInfluence = 0.35
         outer.Rate = 55
         outer.Lifetime = NumberRange.new(0.6, 1.1)
         outer.Speed = NumberRange.new(2.5, 5.2)
         outer.SpreadAngle = Vector2.new(45, 45)
         outer.Acceleration = Vector3.new(0, 9.5, 0)
         outer.RotSpeed = NumberRange.new(-110, 110)
+        outer.Rotation = NumberRange.new(-60, 60)
         outer.Size = NumberSequence.new({
             NumberSequenceKeypoint.new(0, 1.8),
             NumberSequenceKeypoint.new(0.5, 2.9),
             NumberSequenceKeypoint.new(1, 0.2)
+        })
+        outer.Transparency = NumberSequence.new({
+            NumberSequenceKeypoint.new(0, 0.28),
+            NumberSequenceKeypoint.new(0.7, 0.5),
+            NumberSequenceKeypoint.new(1, 1)
         })
         outer.Parent = tonguesAtt
 
         local smoke = Instance.new("ParticleEmitter")
         smoke.Name = "EnergySmoke"
         smoke.Texture = "rbxasset://textures/particles/smoke_main.dds"
-        smoke.Color = ColorSequence.new(
-            Color3.fromRGB(92, 24, 168),
-            Color3.fromRGB(18, 4, 38)
-        )
+        smoke.Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(92, 24, 168)),
+            ColorSequenceKeypoint.new(0.6, Color3.fromRGB(45, 10, 92)),
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(18, 4, 38))
+        })
+        smoke.LightEmission = 0.2
+        smoke.LightInfluence = 0.5
         smoke.Rate = 28
         smoke.Lifetime = NumberRange.new(0.8, 1.4)
         smoke.Speed = NumberRange.new(1.8, 3.8)
         smoke.SpreadAngle = Vector2.new(55, 55)
         smoke.Acceleration = Vector3.new(0, 7, 0)
+        smoke.RotSpeed = NumberRange.new(-45, 45)
         smoke.Size = NumberSequence.new({
             NumberSequenceKeypoint.new(0, 1.4),
             NumberSequenceKeypoint.new(0.6, 2.7),
             NumberSequenceKeypoint.new(1, 3.4)
+        })
+        smoke.Transparency = NumberSequence.new({
+            NumberSequenceKeypoint.new(0, 0.55),
+            NumberSequenceKeypoint.new(0.5, 0.72),
+            NumberSequenceKeypoint.new(1, 1)
         })
         smoke.Parent = smokeAtt
 
@@ -1764,24 +1787,20 @@ local function applyActiveAura(char)
         buildRealAura(char, root, selectedAuraMode)
 end
 
-local function createNeonPart(parent, name, color, size)
+local function createAuraPreviewParticle(parent, name, color, size, transparency)
     local part = Instance.new("Part")
-
     part.Name = name
     part.Shape = Enum.PartType.Ball
     part.Size = size
     part.Material = Enum.Material.Neon
     part.Color = color
-    part.Transparency = 0.12
-
+    part.Transparency = transparency or 0.15
     part.Anchored = true
     part.CanCollide = false
     part.CanTouch = false
     part.CanQuery = false
     part.CastShadow = false
-
     part.Parent = parent
-
     return part
 end
 
@@ -1795,6 +1814,7 @@ local function clearPreviewAura()
     end
 end
 
+-- Строим точные частицы и цвета (Noob: фиолетовый/синий; Fire: фиолетовое пламя + дым) в ViewportFrame
 local function buildPreviewAura()
     clearPreviewAura()
 
@@ -1810,87 +1830,93 @@ local function buildPreviewAura()
     local folder = Instance.new("Folder")
     folder.Name = "PreviewAuraEffects"
     folder.Parent = previewWorld
-
     previewAuraFolder = folder
 
     local objects = {}
     local time = 0
 
     if selectedAuraMode == "Noob" then
-
-        local colors = {
+        local exactNoobColors = {
             Color3.fromRGB(125, 50, 255),
             Color3.fromRGB(65, 160, 255),
-            Color3.fromRGB(200, 100, 255),
-            Color3.fromRGB(170, 100, 255)
+            Color3.fromRGB(200, 100, 255)
         }
 
-        for i = 1, 16 do
-            local angle = (i / 16) * math.pi * 2
-
-            local part = createNeonPart(
+        for i = 1, 24 do
+            local angle = (i / 24) * math.pi * 2
+            local col = exactNoobColors[((i - 1) % #exactNoobColors) + 1]
+            local part = createAuraPreviewParticle(
                 folder,
-                "NoobParticle_" .. i,
-                colors[(i % #colors) + 1],
-                Vector3.new(0.17, 0.17, 0.17)
+                "NoobSpark_" .. i,
+                col,
+                Vector3.new(0.18, 0.18, 0.18),
+                0.1
             )
 
             table.insert(objects, {
                 part = part,
                 angle = angle,
-                height = (i % 5) * 0.55 - 0.8,
-                radius = 1.15 + (i % 3) * 0.16,
-                speed = 0.8 + (i % 4) * 0.15,
-                size = 0.12 + (i % 3) * 0.045
+                height = ((i % 6) - 2.5) * 0.42,
+                radius = 1.05 + (i % 3) * 0.22,
+                speed = 1.1 + (i % 4) * 0.25,
+                size = 0.14 + (i % 3) * 0.05,
+                kind = "spark"
             })
         end
-
-    elseif selectedAuraMode == "Fire" then
-
-        local colors = {
-            Color3.fromRGB(210, 100, 255),
-            Color3.fromRGB(160, 35, 255),
-            Color3.fromRGB(105, 15, 210),
-            Color3.fromRGB(240, 160, 255)
+    else
+        local exactFireColors = {
+            Color3.fromRGB(220, 140, 255),
+            Color3.fromRGB(155, 45, 255),
+            Color3.fromRGB(115, 20, 210),
+            Color3.fromRGB(88, 12, 185)
         }
 
-        for i = 1, 20 do
-            local angle = (i / 20) * math.pi * 2
-
-            local part = createNeonPart(
+        for i = 1, 24 do
+            local angle = (i / 24) * math.pi * 2
+            local col = exactFireColors[((i - 1) % #exactFireColors) + 1]
+            local part = createAuraPreviewParticle(
                 folder,
-                "FireParticle_" .. i,
-                colors[(i % #colors) + 1],
-                Vector3.new(0.2, 0.55, 0.2)
+                "FireTongue_" .. i,
+                col,
+                Vector3.new(0.22, 0.65, 0.22),
+                0.15
             )
 
             table.insert(objects, {
                 part = part,
                 angle = angle,
-                height = (i % 6) * 0.4 - 1,
-                radius = 0.95 + (i % 4) * 0.2,
-                speed = 1.1 + (i % 5) * 0.18,
-                size = 0.2 + (i % 3) * 0.07
+                height = ((i % 5) - 2) * 0.45,
+                radius = 0.9 + (i % 4) * 0.18,
+                speed = 1.3 + (i % 4) * 0.22,
+                size = 0.18 + (i % 3) * 0.06,
+                kind = "flame"
             })
         end
 
-        for i = 1, 8 do
-            local part = createNeonPart(
-                folder,
-                "FireGlow_" .. i,
-                Color3.fromRGB(155, 45, 255),
-                Vector3.new(0.32, 0.32, 0.32)
-            )
+        local exactSmokeColors = {
+            Color3.fromRGB(92, 24, 168),
+            Color3.fromRGB(45, 10, 92)
+        }
 
-            part.Transparency = 0.45
+        for i = 1, 10 do
+            local angle = (i / 10) * math.pi * 2
+            local col = exactSmokeColors[((i - 1) % #exactSmokeColors) + 1]
+            local part = createAuraPreviewParticle(
+                folder,
+                "FireSmoke_" .. i,
+                col,
+                Vector3.new(0.45, 0.45, 0.45),
+                0.55
+            )
 
             table.insert(objects, {
                 part = part,
-                angle = (i / 8) * math.pi * 2,
-                height = -1.3 + (i % 4) * 0.8,
+                angle = angle,
+                height = ((i % 4) - 1.5) * 0.55,
                 radius = 1.35,
-                speed = -0.6,
-                size = 0.32
+                speed = -0.7,
+                size = 0.36,
+                kind = "smoke"
             })
         end
     end
@@ -1904,43 +1930,29 @@ local function buildPreviewAura()
 
         for _, data in ipairs(objects) do
             local angle = data.angle + time * data.speed
-
-            local height = data.height +
-                math.sin(time * 2 + data.angle) * 0.22
-
-            local radius = data.radius +
-                math.sin(time * 1.5 + data.angle) * 0.08
+            local height = data.height + math.sin(time * 2.5 + data.angle) * 0.25
+            local radius = data.radius + math.sin(time * 1.8 + data.angle) * 0.1
 
             local x = math.cos(angle) * radius
             local z = math.sin(angle) * radius
-
-            local position = root.CFrame:PointToWorldSpace(
-                Vector3.new(x, height, z)
-            )
-
+            local position = root.CFrame:PointToWorldSpace(Vector3.new(x, height, z))
             local part = data.part
-
-            part.Position = position
-
             local pulse = (math.sin(time * 4 + data.angle) + 1) / 2
+            local scale = data.size * (0.8 + pulse * 0.45)
 
-            local scale = data.size * (0.8 + pulse * 0.4)
-
-            if selectedAuraMode == "Fire" then
-                part.Size = Vector3.new(
-                    scale,
-                    scale * 2.2,
-                    scale
+            if data.kind == "flame" then
+                part.Size = Vector3.new(scale, scale * 2.4, scale)
+                part.CFrame = CFrame.new(position) * CFrame.Angles(
+                    math.sin(time * 3 + data.angle) * 0.35,
+                    angle,
+                    math.cos(time * 2.5 + data.angle) * 0.35
                 )
-
-                part.CFrame = CFrame.new(position) *
-                    CFrame.Angles(
-                        math.sin(time * 3 + data.angle) * 0.3,
-                        angle,
-                        math.cos(time * 2 + data.angle) * 0.3
-                    )
+            elseif data.kind == "smoke" then
+                part.Size = Vector3.new(scale * 1.3, scale * 1.3, scale * 1.3)
+                part.Position = position
             else
                 part.Size = Vector3.new(scale, scale, scale)
+                part.Position = position
             end
         end
     end)
@@ -1949,89 +1961,80 @@ end
 local function buildAuraPreviewUI(panel)
     local pickLbl = Instance.new("TextLabel")
     pickLbl.Name = "AuraTitle"
-    pickLbl.Size = UDim2.new(1, 0, 0, 18)
+    pickLbl.Size = UDim2.new(1, 0, 0, 16)
     pickLbl.Position = UDim2.new(0, 0, 0, 0)
     pickLbl.BackgroundTransparency = 1
     pickLbl.Font = Enum.Font.GothamBold
     pickLbl.Text = "Выберите ауру:"
-    pickLbl.TextColor3 = Color3.fromRGB(240, 225, 255)
-    pickLbl.TextSize = 11
+    pickLbl.TextColor3 = Color3.fromRGB(250, 220, 170)
+    pickLbl.TextSize = 10
     pickLbl.TextXAlignment = Enum.TextXAlignment.Left
     pickLbl.ZIndex = 11
     pickLbl.Parent = panel
 
     local noobBtn = Instance.new("TextButton")
     noobBtn.Name = "NoobAuraButton"
-    noobBtn.Size = UDim2.new(0, 92, 0, 25)
-    noobBtn.Position = UDim2.new(0, 0, 0, 20)
-    noobBtn.BackgroundColor3 = Color3.fromRGB(120, 65, 220)
+    noobBtn.Size = UDim2.new(0, 92, 0, 22)
+    noobBtn.Position = UDim2.new(0, 0, 0, 17)
+    noobBtn.BackgroundColor3 = Color3.fromRGB(255, 120, 0)
     noobBtn.Text = "Нуб-аура"
-    noobBtn.TextColor3 = Color3.new(1, 1, 1)
+    noobBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
     noobBtn.TextSize = 10
     noobBtn.Font = Enum.Font.GothamBold
     noobBtn.ZIndex = 11
     noobBtn.Parent = panel
-
-    Instance.new("UICorner", noobBtn).CornerRadius = UDim.new(0, 7)
+    Instance.new("UICorner", noobBtn).CornerRadius = UDim.new(0, 6)
 
     local fireBtn = Instance.new("TextButton")
     fireBtn.Name = "FireAuraButton"
-    fireBtn.Size = UDim2.new(0, 98, 0, 25)
-    fireBtn.Position = UDim2.new(0, 97, 0, 20)
-    fireBtn.BackgroundColor3 = Color3.fromRGB(35, 25, 50)
+    fireBtn.Size = UDim2.new(0, 96, 0, 22)
+    fireBtn.Position = UDim2.new(0, 98, 0, 17)
+    fireBtn.BackgroundColor3 = Color3.fromRGB(50, 28, 14)
     fireBtn.Text = "Огневая аура"
-    fireBtn.TextColor3 = Color3.fromRGB(210, 185, 230)
+    fireBtn.TextColor3 = Color3.fromRGB(200, 160, 120)
     fireBtn.TextSize = 10
     fireBtn.Font = Enum.Font.GothamBold
     fireBtn.ZIndex = 11
     fireBtn.Parent = panel
-
-    Instance.new("UICorner", fireBtn).CornerRadius = UDim.new(0, 7)
+    Instance.new("UICorner", fireBtn).CornerRadius = UDim.new(0, 6)
 
     local previewContainer = Instance.new("Frame")
     previewContainer.Name = "PreviewContainer"
-    previewContainer.Size = UDim2.new(0, 195, 0, 152)
-    previewContainer.Position = UDim2.new(0, 0, 0, 50)
-    previewContainer.BackgroundColor3 = Color3.fromRGB(17, 13, 29)
-    previewContainer.BackgroundTransparency = 0
+    previewContainer.Size = UDim2.new(0, 195, 0, 142)
+    previewContainer.Position = UDim2.new(0, 0, 0, 44)
+    previewContainer.BackgroundColor3 = Color3.fromRGB(48, 28, 14)
+    previewContainer.BackgroundTransparency = 0.15
     previewContainer.BorderSizePixel = 0
     previewContainer.ClipsDescendants = true
     previewContainer.ZIndex = 11
     previewContainer.Parent = panel
-
-    Instance.new("UICorner", previewContainer).CornerRadius = UDim.new(0, 10)
-
-    local stroke = Instance.new("UIStroke")
-    stroke.Color = Color3.fromRGB(110, 65, 180)
-    stroke.Transparency = 0.35
-    stroke.Thickness = 1
-    stroke.Parent = previewContainer
+    Instance.new("UICorner", previewContainer).CornerRadius = UDim.new(0, 8)
 
     local prevTitle = Instance.new("TextLabel")
-    prevTitle.Size = UDim2.new(1, -12, 0, 18)
-    prevTitle.Position = UDim2.new(0, 8, 0, 4)
+    prevTitle.Size = UDim2.new(1, -10, 0, 16)
+    prevTitle.Position = UDim2.new(0, 6, 0, 3)
     prevTitle.BackgroundTransparency = 1
     prevTitle.Font = Enum.Font.GothamBold
-    prevTitle.Text = "LIVE PREVIEW"
-    prevTitle.TextColor3 = Color3.fromRGB(210, 175, 255)
+    prevTitle.Text = "Предпросмотр"
+    prevTitle.TextColor3 = Color3.fromRGB(250, 220, 170)
     prevTitle.TextSize = 10
     prevTitle.TextXAlignment = Enum.TextXAlignment.Left
     prevTitle.ZIndex = 12
     prevTitle.Parent = previewContainer
+    table.insert(translatableCards, {lbl = prevTitle, ru = "Предпросмотр", en = "Предпросмотр"})
 
     local viewport = Instance.new("ViewportFrame")
     viewport.Name = "AuraViewport"
-    viewport.Size = UDim2.new(1, -10, 1, -28)
-    viewport.Position = UDim2.new(0, 5, 0, 23)
-    viewport.BackgroundColor3 = Color3.fromRGB(19, 13, 32)
-    viewport.BackgroundTransparency = 0
-    viewport.Ambient = Color3.fromRGB(180, 165, 210)
+    viewport.Size = UDim2.new(1, -10, 1, -24)
+    viewport.Position = UDim2.new(0, 5, 0, 19)
+    viewport.BackgroundColor3 = Color3.fromRGB(28, 16, 10)
+    viewport.BackgroundTransparency = 0.1
+    viewport.Ambient = Color3.fromRGB(200, 180, 220)
     viewport.LightColor = Color3.fromRGB(255, 240, 255)
     viewport.LightDirection = Vector3.new(-0.5, -1, -0.5)
     viewport.ZIndex = 12
     viewport.Parent = previewContainer
-
-    Instance.new("UICorner", viewport).CornerRadius = UDim.new(0, 8)
+    Instance.new("UICorner", viewport).CornerRadius = UDim.new(0, 6)
 
     previewWorld = Instance.new("WorldModel")
     previewWorld.Name = "AuraPreviewWorld"
@@ -2051,7 +2054,6 @@ local function buildAuraPreviewUI(panel)
         end
 
         local character = player.Character
-
         if not character then
             return false
         end
@@ -2066,7 +2068,6 @@ local function buildAuraPreviewUI(panel)
         character.Archivable = oldArchivable
 
         if not success or not clone then
-            warn("Не удалось создать копию персонажа")
             return false
         end
 
@@ -2074,28 +2075,22 @@ local function buildAuraPreviewUI(panel)
             if object:IsA("Script")
                 or object:IsA("LocalScript")
                 or object:IsA("ModuleScript") then
-
                 object:Destroy()
-
             elseif object:IsA("BasePart") then
                 object.Anchored = true
                 object.CanCollide = false
                 object.CanTouch = false
                 object.CanQuery = false
-
             elseif object:IsA("Humanoid") then
-                object.DisplayDistanceType =
-                    Enum.HumanoidDisplayDistanceType.None
+                object.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
             end
         end
 
         clone.Name = "AuraPreviewCharacter"
         clone.Parent = previewWorld
-
         previewCharModel = clone
 
         local root = clone:FindFirstChild("HumanoidRootPart")
-
         if not root then
             clone:Destroy()
             previewCharModel = nil
@@ -2106,14 +2101,8 @@ local function buildAuraPreviewUI(panel)
         clone:PivotTo(CFrame.new(0, 0, 0))
 
         local boxCF, boxSize = clone:GetBoundingBox()
-
         local center = boxCF.Position
-
-        local distance = math.max(
-            6,
-            boxSize.Y * 1.45,
-            boxSize.X * 2
-        )
+        local distance = math.max(6, boxSize.Y * 1.45, boxSize.X * 2)
 
         previewCamera.CFrame = CFrame.lookAt(
             center + Vector3.new(0, 0.8, distance),
@@ -2138,30 +2127,16 @@ local function buildAuraPreviewUI(panel)
         )
     end
 
-    local function rebuildPreviewAura()
-        buildPreviewAura()
-    end
-
     refreshAuraPreviewVisual = function()
         local isFire = selectedAuraMode == "Fire"
 
-        noobBtn.BackgroundColor3 = not isFire
-            and Color3.fromRGB(120, 65, 220)
-            or Color3.fromRGB(35, 25, 50)
+        noobBtn.BackgroundColor3 = (not isFire) and Color3.fromRGB(255, 120, 0) or Color3.fromRGB(50, 28, 14)
+        noobBtn.TextColor3 = (not isFire) and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(200, 160, 120)
 
-        fireBtn.BackgroundColor3 = isFire
-            and Color3.fromRGB(150, 55, 230)
-            or Color3.fromRGB(35, 25, 50)
+        fireBtn.BackgroundColor3 = isFire and Color3.fromRGB(255, 120, 0) or Color3.fromRGB(50, 28, 14)
+        fireBtn.TextColor3 = isFire and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(200, 160, 120)
 
-        noobBtn.TextColor3 = not isFire
-            and Color3.new(1, 1, 1)
-            or Color3.fromRGB(190, 175, 205)
-
-        fireBtn.TextColor3 = isFire
-            and Color3.new(1, 1, 1)
-            or Color3.fromRGB(190, 175, 205)
-
-        rebuildPreviewAura()
+        buildPreviewAura()
 
         if auraEnabled and player.Character then
             applyActiveAura(player.Character)
@@ -2181,19 +2156,14 @@ local function buildAuraPreviewUI(panel)
     viewport.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1
             or input.UserInputType == Enum.UserInputType.Touch then
-
             draggingModel = true
-            lastPosition = Vector2.new(
-                input.Position.X,
-                input.Position.Y
-            )
+            lastPosition = Vector2.new(input.Position.X, input.Position.Y)
         end
     end)
 
     UserInputService.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1
             or input.UserInputType == Enum.UserInputType.Touch then
-
             draggingModel = false
         end
     end)
@@ -2208,17 +2178,11 @@ local function buildAuraPreviewUI(panel)
             return
         end
 
-        local currentPosition = Vector2.new(
-            input.Position.X,
-            input.Position.Y
-        )
-
+        local currentPosition = Vector2.new(input.Position.X, input.Position.Y)
         local delta = currentPosition - lastPosition
-
         lastPosition = currentPosition
 
         modelRotation += delta.X * 0.012
-
         updateRotation()
     end)
 
@@ -2228,15 +2192,12 @@ local function buildAuraPreviewUI(panel)
 
     player.CharacterAdded:Connect(function()
         task.wait(1)
-
         if not panel.Parent then
             return
         end
-
         if createPreviewCharacter() then
             refreshAuraPreviewVisual()
         end
-
         if auraEnabled then
             applyActiveAura(player.Character)
         end
@@ -2244,17 +2205,14 @@ local function buildAuraPreviewUI(panel)
 
     panel.Destroying:Connect(function()
         clearPreviewAura()
-
         if previewCharModel then
             previewCharModel:Destroy()
             previewCharModel = nil
         end
-
         if previewWorld then
             previewWorld:Destroy()
             previewWorld = nil
         end
-
         draggingModel = false
     end)
 end
@@ -2270,7 +2228,7 @@ _, setAuraUIFunc = createModuleCard(visualsPage, "Аура", "Эффекты в�
     end
 end, true, function(panel)
     buildAuraPreviewUI(panel)
-end, 278)
+end, 266)
 setAuraUIState = setAuraUIFunc
 
 player.CharacterAdded:Connect(function(char)
@@ -2281,7 +2239,7 @@ player.CharacterAdded:Connect(function(char)
     end
 end)
 
--- РОВНЫЕ СИММЕТРИЧНЫЕ АНГЕЛЬСКИЕ КРЫЛЬЯ НА СПИНЕ (ВЫНЕСЕНЫ ЧУТЬ ПОДАЛЬШЕ НАЗАД)
+-- РОВНЫЕ СИММЕТРИЧНЫЕ АНГЕЛЬСКИЕ КРЫЛЬЯ НА СПИНЕ
 local angelWingsModel = nil
 local angelWingsConn = nil
 
@@ -2311,7 +2269,6 @@ local function applyAngelWings(char)
         model.Parent = Workspace
         angelWingsModel = model
 
-        -- Смещаем якорь на +0.92 по локальной оси Z (строго за спину, чтобы не было внутри персонажа)
         local anchor = Instance.new("Part")
         anchor.Name = "WingsAnchor"
         anchor.Size = Vector3.new(0.4, 0.4, 0.4)
@@ -2369,7 +2326,6 @@ local function applyAngelWings(char)
         rJointWeld.C0 = rBaseC0
         rJointWeld.Parent = rightJoint
 
-        -- sideSign: -1 для левого крыла (-X), +1 для правого крыла (+X)
         local function createFeather(parentJoint, sideSign, index, total, isSecondary)
             local t = (index - 1) / math.max(1, total - 1)
             local length = isSecondary and (1.30 - t * 0.38) or (2.55 - t * 0.95)
