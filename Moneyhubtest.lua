@@ -18,9 +18,8 @@ local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 local camera = Workspace.CurrentCamera
 
--- АССЕТЫ И ТЕКСТУРЫ ZELIX HUB
-local LOGO_TEXTURE_ID = "rbxassetid://77065239708870"
-local FLOAT_SQUARE_TEXTURE_ID = "rbxassetid://125033641674625"
+local LOGO_TEXTURE_ID = "rbxassetid://98493187820853"
+local MINIMIZED_SQUARE_ID = "rbxassetid://125033641674625"
 local CROSS_TEXTURE_ID = "rbxassetid://87983057610468"
 local NOTIFY_FRAME_ID = ""
 
@@ -37,11 +36,11 @@ local SAVE_ICON = "rbxassetid://11768914234"
 local IMPORT_ICON = "rbxassetid://6953990743"
 local DELETE_ICON = "rbxassetid://11768918600"
 
--- ЗВУКОВЫЕ АССЕТЫ
-local SOUND_TOGGLE_ON = "rbxassetid://139421450430380"
-local SOUND_CLICK = "rbxassetid://6895079853"
-local SOUND_MINIMIZE = "rbxassetid://6042053626"
-local SOUND_ERROR = "rbxassetid://109149869070031"
+local SOUND_ENABLE_ID = "rbxassetid://139421450430380"
+local SOUND_DISABLE_ID = "rbxassetid://9118823101"
+local SOUND_ERROR_ID = "rbxassetid://109149869070031"
+local SOUND_CLICK_ID = "rbxassetid://6895079853"
+local SOUND_TELEPORT_ID = "rbxassetid://5066021887"
 
 local SAFE_COORDS = Vector3.new(-200.7, 675.7, 357.3)
 
@@ -69,15 +68,19 @@ pcall(function()
 end)
 if not screenGui.Parent then screenGui.Parent = playerGui end
 
-local function playSoundAsset(soundId, volume, pitch)
+local function playSoundEffect(soundId, volume, pitch)
     pcall(function()
+        if not soundId or soundId == "" then return end
         local sound = Instance.new("Sound")
         sound.SoundId = soundId
-        sound.Volume = volume or 0.7
+        sound.Volume = volume or 0.8
         sound.PlaybackSpeed = pitch or 1
         sound.Parent = SoundService
         sound:Play()
-        task.delay(2.5, function()
+        sound.Ended:Connect(function()
+            sound:Destroy()
+        end)
+        task.delay(3, function()
             if sound and sound.Parent then
                 sound:Destroy()
             end
@@ -86,44 +89,30 @@ local function playSoundAsset(soundId, volume, pitch)
 end
 
 local function playEnableSound()
-    playSoundAsset(SOUND_TOGGLE_ON, 0.95, 1.0)
+    playSoundEffect(SOUND_ENABLE_ID, 0.9, 1.05)
+end
+
+local function playDisableSound()
+    playSoundEffect(SOUND_DISABLE_ID, 0.65, 0.92)
 end
 
 local function playClickSound()
-    playSoundAsset(SOUND_CLICK, 0.45, 1.05)
+    playSoundEffect(SOUND_CLICK_ID, 0.5, 1.1)
 end
 
--- ПАЛИТРА В СТИЛЕ НЕОНОВОГО ФИОЛЕТОВОГО ДАШБОРДА
-local THEME = {
-    BgDark = Color3.fromRGB(13, 10, 22),
-    BgPanel = Color3.fromRGB(22, 16, 38),
-    BgCard = Color3.fromRGB(27, 20, 46),
-    BgCardAlt = Color3.fromRGB(34, 24, 58),
-    StrokePurple = Color3.fromRGB(128, 72, 255),
-    StrokeSoft = Color3.fromRGB(72, 46, 138),
-    AccentPurple = Color3.fromRGB(139, 78, 255),
-    AccentViolet = Color3.fromRGB(178, 110, 255),
-    AccentGreen = Color3.fromRGB(54, 224, 148),
-    TextBright = Color3.fromRGB(244, 238, 255),
-    TextMuted = Color3.fromRGB(156, 138, 194),
-    DangerRed = Color3.fromRGB(255, 62, 92)
-}
+local currentLanguage = "RU"
+local translatableCards = {}
+local updateAllTranslations
 
-local function addStroke(parent, color, thickness, transparency)
-    local st = Instance.new("UIStroke")
-    st.Color = color or THEME.StrokeSoft
-    st.Thickness = thickness or 1.2
-    st.Transparency = transparency or 0.35
-    st.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-    st.Parent = parent
-    return st
+local function tr(ru, en)
+    return (currentLanguage == "EN") and en or ru
 end
 
 -- КРАСНОЕ НЕОНОВОЕ УВЕДОМЛЕНИЕ ПРИ ОТСУТСТВИИ СПОСОБНОСТИ
 local activeErrorNotification = nil
 
 local function showAbilityErrorNotification(onCompleted)
-    playSoundAsset(SOUND_ERROR, 1, 1)
+    playSoundEffect(SOUND_ERROR_ID, 1.0, 1.0)
 
     if activeErrorNotification and activeErrorNotification.Parent then
         activeErrorNotification:Destroy()
@@ -143,23 +132,35 @@ local function showAbilityErrorNotification(onCompleted)
 
     local errBg = Instance.new("Frame")
     errBg.Size = UDim2.new(1, 0, 1, 0)
-    errBg.BackgroundColor3 = Color3.fromRGB(24, 8, 16)
-    errBg.BackgroundTransparency = 0.06
+    errBg.BackgroundColor3 = Color3.fromRGB(22, 6, 14)
+    errBg.BackgroundTransparency = 0.08
     errBg.BorderSizePixel = 0
     errBg.ClipsDescendants = true
     errBg.ZIndex = 801
     errBg.Parent = errContainer
 
-    Instance.new("UICorner", errBg).CornerRadius = UDim.new(0, 10)
+    local errCorner = Instance.new("UICorner")
+    errCorner.CornerRadius = UDim.new(0, 10)
+    errCorner.Parent = errBg
 
     local errGradient = Instance.new("UIGradient")
     errGradient.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(165, 20, 48)),
-        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(32, 10, 24)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(130, 18, 60))
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(165, 16, 48)),
+        ColorSequenceKeypoint.new(0.45, Color3.fromRGB(36, 10, 28)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(140, 12, 42))
     })
     errGradient.Rotation = 25
     errGradient.Parent = errBg
+
+    local diagSheen = Instance.new("Frame")
+    diagSheen.Size = UDim2.new(0.45, 0, 2.2, 0)
+    diagSheen.Position = UDim2.new(0.22, 0, -0.6, 0)
+    diagSheen.Rotation = 28
+    diagSheen.BackgroundColor3 = Color3.fromRGB(255, 45, 95)
+    diagSheen.BackgroundTransparency = 0.86
+    diagSheen.BorderSizePixel = 0
+    diagSheen.ZIndex = 802
+    diagSheen.Parent = errBg
 
     if NOTIFY_FRAME_ID ~= "" then
         local frameArt = Instance.new("ImageLabel")
@@ -170,7 +171,12 @@ local function showAbilityErrorNotification(onCompleted)
         frameArt.ZIndex = 803
         frameArt.Parent = errBg
     else
-        addStroke(errBg, THEME.DangerRed, 1.6, 0.15)
+        local borderStroke = Instance.new("UIStroke")
+        borderStroke.Color = Color3.fromRGB(255, 45, 85)
+        borderStroke.Thickness = 1.6
+        borderStroke.Transparency = 0.15
+        borderStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+        borderStroke.Parent = errBg
     end
 
     local iconHolder = Instance.new("Frame")
@@ -186,7 +192,7 @@ local function showAbilityErrorNotification(onCompleted)
     errIcon.Position = UDim2.new(0.5, -17, 0.5, -17)
     errIcon.BackgroundTransparency = 1
     errIcon.Image = CROSS_TEXTURE_ID
-    errIcon.ImageColor3 = THEME.DangerRed
+    errIcon.ImageColor3 = Color3.fromRGB(255, 65, 105)
     errIcon.ScaleType = Enum.ScaleType.Fit
     errIcon.ZIndex = 805
     errIcon.Parent = iconHolder
@@ -196,8 +202,8 @@ local function showAbilityErrorNotification(onCompleted)
     errLbl.Position = UDim2.new(0, 20, 0, 0)
     errLbl.BackgroundTransparency = 1
     errLbl.Font = Enum.Font.GothamBold
-    errLbl.Text = "Выберите способность"
-    errLbl.TextColor3 = THEME.TextBright
+    errLbl.Text = tr("Выберите способность", "Select an ability")
+    errLbl.TextColor3 = Color3.fromRGB(255, 245, 250)
     errLbl.TextSize = 12
     errLbl.TextXAlignment = Enum.TextXAlignment.Left
     errLbl.TextTruncate = Enum.TextTruncate.AtEnd
@@ -225,7 +231,7 @@ local function showAbilityErrorNotification(onCompleted)
     end)
 end
 
--- УВЕДОМЛЕНИЯ В НЕОНОВОМ ФИОЛЕТОВО-ЗЕЛЁНОМ СТИЛЕ
+-- СТАНДАРТНЫЕ УВЕДОМЛЕНИЯ (ТЁМНО-ФИОЛЕТОВЫЙ НЕОНОВЫЙ СТИЛЬ)
 local notificationsContainer = Instance.new("Frame")
 notificationsContainer.Name = "NotificationsContainer"
 notificationsContainer.Size = UDim2.new(0, 245, 1, 0)
@@ -242,15 +248,19 @@ local function showNotification(title, stateText)
 
     local notifFrame = Instance.new("Frame")
     notifFrame.Size = UDim2.new(1, 0, 0, 45)
-    notifFrame.Position = UDim2.new(1, 50, 1, yPos - 10)
-    notifFrame.BackgroundColor3 = THEME.BgPanel
-    notifFrame.BackgroundTransparency = 0.06
+    notifFrame.Position = UDim2.new(1, 60, 1, yPos - 10)
+    notifFrame.BackgroundColor3 = Color3.fromRGB(24, 15, 42)
+    notifFrame.BackgroundTransparency = 0.08
     notifFrame.BorderSizePixel = 0
     notifFrame.ZIndex = 501
     notifFrame.Parent = notificationsContainer
 
-    Instance.new("UICorner", notifFrame).CornerRadius = UDim.new(0, 10)
-    addStroke(notifFrame, THEME.StrokePurple, 1.2, 0.3)
+    local nCorner = Instance.new("UICorner") nCorner.CornerRadius = UDim.new(0, 10) nCorner.Parent = notifFrame
+    local nStroke = Instance.new("UIStroke")
+    nStroke.Color = Color3.fromRGB(145, 72, 255)
+    nStroke.Thickness = 1.2
+    nStroke.Transparency = 0.35
+    nStroke.Parent = notifFrame
 
     local titleLbl = Instance.new("TextLabel")
     titleLbl.Size = UDim2.new(1, -15, 0, 22)
@@ -258,7 +268,7 @@ local function showNotification(title, stateText)
     titleLbl.BackgroundTransparency = 1
     titleLbl.Font = Enum.Font.GothamBold
     titleLbl.Text = title .. ": " .. stateText
-    titleLbl.TextColor3 = THEME.TextBright
+    titleLbl.TextColor3 = Color3.fromRGB(228, 198, 255)
     titleLbl.TextSize = 11
     titleLbl.TextXAlignment = Enum.TextXAlignment.Left
     titleLbl.ZIndex = 502
@@ -267,99 +277,158 @@ local function showNotification(title, stateText)
     local lineBg = Instance.new("Frame")
     lineBg.Size = UDim2.new(1, -20, 0, 3)
     lineBg.Position = UDim2.new(0, 10, 1, -8)
-    lineBg.BackgroundColor3 = THEME.BgDark
+    lineBg.BackgroundColor3 = Color3.fromRGB(45, 28, 76)
     lineBg.BorderSizePixel = 0
     lineBg.ZIndex = 502
     lineBg.Parent = notifFrame
-    Instance.new("UICorner", lineBg).CornerRadius = UDim.new(1, 0)
+    local lbCorner = Instance.new("UICorner") lbCorner.CornerRadius = UDim.new(1, 0) lbCorner.Parent = lineBg
 
     local lineFill = Instance.new("Frame")
     lineFill.Size = UDim2.new(1, 0, 1, 0)
     lineFill.Position = UDim2.new(0, 0, 0, 0)
-    lineFill.BackgroundColor3 = THEME.AccentPurple
+    lineFill.BackgroundColor3 = Color3.fromRGB(168, 85, 247)
     lineFill.BorderSizePixel = 0
     lineFill.ZIndex = 503
     lineFill.Parent = lineBg
-    Instance.new("UICorner", lineFill).CornerRadius = UDim.new(1, 0)
+    local lfCorner = Instance.new("UICorner") lfCorner.CornerRadius = UDim.new(1, 0) lfCorner.Parent = lineFill
 
-    local grad = Instance.new("UIGradient")
-    grad.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, THEME.AccentPurple),
-        ColorSequenceKeypoint.new(1, THEME.AccentGreen)
-    })
-    grad.Parent = lineFill
-
-    TweenService:Create(notifFrame, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Position = UDim2.new(0, 0, 1, yPos - 10)}):Play()
-    TweenService:Create(lineFill, TweenInfo.new(3.0, Enum.EasingStyle.Linear), {Size = UDim2.new(0, 0, 1, 0)}):Play()
+    TweenService:Create(notifFrame, TweenInfo.new(0.32, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+        Position = UDim2.new(0, 0, 1, yPos - 10)
+    }):Play()
+    TweenService:Create(lineFill, TweenInfo.new(3.0, Enum.EasingStyle.Linear), {
+        Size = UDim2.new(0, 0, 1, 0)
+    }):Play()
 
     task.delay(3.0, function()
         if notifFrame and notifFrame.Parent then
-            TweenService:Create(notifFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Position = UDim2.new(1, 50, 1, yPos - 10), BackgroundTransparency = 1}):Play()
-            task.wait(0.3)
-            if notifFrame and notifFrame.Parent then notifFrame:Destroy() end
-            activeNotifications = math.max(0, activeNotifications - 1)
+            local tw = TweenService:Create(notifFrame, TweenInfo.new(0.28, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+                Position = UDim2.new(1, 60, 1, yPos - 10),
+                BackgroundTransparency = 1
+            })
+            tw:Play()
+            tw.Completed:Connect(function()
+                notifFrame:Destroy()
+                activeNotifications = math.max(0, activeNotifications - 1)
+            end)
         end
     end)
 end
 
--- ГЛАВНОЕ ОКНО ZELIX HUB + СОХРАНЕНИЕ ПОЗИЦИИ
-local defaultWindowPos = UDim2.new(0.5, -320, 0.5, -205)
-local savedWindowPos = defaultWindowPos
-local hiddenOffsetY = 380
+-- ГЛАВНОЕ ОКНО (ZELIX HUB)
+local mainWidth = 640
+local mainHeight = 410
+local defaultMainPos = UDim2.new(0.5, -mainWidth / 2, 0.5, -mainHeight / 2)
+local savedMainPos = defaultMainPos
 
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
-mainFrame.Size = UDim2.new(0, 640, 0, 410)
-mainFrame.Position = UDim2.new(savedWindowPos.X.Scale, savedWindowPos.X.Offset, savedWindowPos.Y.Scale, savedWindowPos.Y.Offset + hiddenOffsetY)
-mainFrame.BackgroundColor3 = THEME.BgDark
+mainFrame.Size = UDim2.new(0, mainWidth, 0, mainHeight)
+mainFrame.Position = defaultMainPos
+mainFrame.BackgroundColor3 = Color3.fromRGB(12, 8, 22)
 mainFrame.BackgroundTransparency = 0.04
 mainFrame.BorderSizePixel = 0
 mainFrame.ClipsDescendants = true
 mainFrame.Parent = screenGui
 
-Instance.new("UICorner", mainFrame).CornerRadius = UDim.new(0, 14)
-addStroke(mainFrame, THEME.StrokePurple, 1.4, 0.25)
+local mainCorner = Instance.new("UICorner")
+mainCorner.CornerRadius = UDim.new(0, 16)
+mainCorner.Parent = mainFrame
 
--- АНИМИРОВАННЫЙ ФОН С ПЛАВНО ДВИЖУЩИМИСЯ ТОЧКАМИ (КАК НА ПОСЛЕДНЕМ СКРИНЕ)
-local bgAnimContainer = Instance.new("Frame")
-bgAnimContainer.Name = "BackgroundWaveDots"
-bgAnimContainer.Size = UDim2.new(1, 0, 1, 0)
-bgAnimContainer.BackgroundTransparency = 1
-bgAnimContainer.ClipsDescendants = true
-bgAnimContainer.ZIndex = 1
-bgAnimContainer.Parent = mainFrame
+local mainStroke = Instance.new("UIStroke")
+mainStroke.Color = Color3.fromRGB(145, 70, 255)
+mainStroke.Thickness = 1.4
+mainStroke.Transparency = 0.3
+mainStroke.Parent = mainFrame
 
-local bgGlow = Instance.new("ImageLabel")
-bgGlow.Size = UDim2.new(1.2, 0, 0.7, 0)
-bgGlow.Position = UDim2.new(-0.1, 0, 0.22, 0)
-bgGlow.BackgroundTransparency = 1
-bgGlow.Image = "rbxassetid://9343433823"
-bgGlow.ImageColor3 = Color3.fromRGB(132, 62, 255)
-bgGlow.ImageTransparency = 0.88
-bgGlow.ZIndex = 1
-bgGlow.Parent = bgAnimContainer
+local mainBgGrad = Instance.new("UIGradient")
+mainBgGrad.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(24, 12, 44)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(11, 7, 20)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(30, 11, 52))
+})
+mainBgGrad.Rotation = 35
+mainBgGrad.Parent = mainFrame
 
-local waveDots = {}
-for i = 1, 68 do
-    local isLarge = (i % 7 == 0)
-    local dotSize = isLarge and math.random(6, 9) or math.random(3, 5)
+-- КРАСИВАЯ ЗАДНЯЯ АНИМАЦИЯ: ОБЪЁМНАЯ ВОЛНА СВЕЧЕНИЯ + МНОГОСЛОЙНЫЕ ЧАСТИЦЫ-ТОЧКИ
+local ambientBgLayer = Instance.new("Frame")
+ambientBgLayer.Name = "AmbientWaveDotsLayer"
+ambientBgLayer.Size = UDim2.new(1, 0, 1, 0)
+ambientBgLayer.BackgroundTransparency = 1
+ambientBgLayer.ClipsDescendants = true
+ambientBgLayer.ZIndex = 0
+ambientBgLayer.Parent = mainFrame
+
+local nebulaGlowUpper = Instance.new("Frame")
+nebulaGlowUpper.Size = UDim2.new(0.95, 0, 0.55, 0)
+nebulaGlowUpper.Position = UDim2.new(0.18, 0, 0.16, 0)
+nebulaGlowUpper.BackgroundColor3 = Color3.fromRGB(152, 56, 255)
+nebulaGlowUpper.BackgroundTransparency = 0.86
+nebulaGlowUpper.BorderSizePixel = 0
+nebulaGlowUpper.ZIndex = 0
+nebulaGlowUpper.Parent = ambientBgLayer
+Instance.new("UICorner", nebulaGlowUpper).CornerRadius = UDim.new(1, 0)
+local nebulaGrad = Instance.new("UIGradient")
+nebulaGrad.Transparency = NumberSequence.new({
+    NumberSequenceKeypoint.new(0, 1),
+    NumberSequenceKeypoint.new(0.35, 0.45),
+    NumberSequenceKeypoint.new(0.65, 0.35),
+    NumberSequenceKeypoint.new(1, 1)
+})
+nebulaGrad.Parent = nebulaGlowUpper
+
+local waveGlowRibbon = Instance.new("Frame")
+waveGlowRibbon.Size = UDim2.new(1.35, 0, 0.28, 0)
+waveGlowRibbon.Position = UDim2.new(-0.18, 0, 0.38, 0)
+waveGlowRibbon.BackgroundColor3 = Color3.fromRGB(178, 86, 255)
+waveGlowRibbon.BackgroundTransparency = 0.84
+waveGlowRibbon.BorderSizePixel = 0
+waveGlowRibbon.ZIndex = 0
+waveGlowRibbon.Parent = ambientBgLayer
+Instance.new("UICorner", waveGlowRibbon).CornerRadius = UDim.new(1, 0)
+local ribbonGrad = Instance.new("UIGradient")
+ribbonGrad.Transparency = NumberSequence.new({
+    NumberSequenceKeypoint.new(0, 1),
+    NumberSequenceKeypoint.new(0.2, 0.5),
+    NumberSequenceKeypoint.new(0.5, 0.15),
+    NumberSequenceKeypoint.new(0.8, 0.5),
+    NumberSequenceKeypoint.new(1, 1)
+})
+ribbonGrad.Parent = waveGlowRibbon
+
+local bgWaveDots = {}
+for i = 1, 115 do
+    local tier = i % 4
+    local dotSize = (tier == 0) and math.random(5, 8) or ((tier == 1) and math.random(3, 5) or math.random(2, 3))
     local dot = Instance.new("Frame")
     dot.Size = UDim2.new(0, dotSize, 0, dotSize)
-    dot.BackgroundColor3 = (i % 3 == 0) and Color3.fromRGB(215, 165, 255) or Color3.fromRGB(152, 84, 255)
-    dot.BackgroundTransparency = isLarge and 0.35 or math.random(45, 75) / 100
+
+    if tier == 0 then
+        dot.BackgroundColor3 = Color3.fromRGB(242, 198, 255)
+    elseif tier == 1 then
+        dot.BackgroundColor3 = Color3.fromRGB(182, 95, 255)
+    elseif tier == 2 then
+        dot.BackgroundColor3 = Color3.fromRGB(132, 68, 245)
+    else
+        dot.BackgroundColor3 = Color3.fromRGB(210, 145, 255)
+    end
+
+    dot.BackgroundTransparency = 0.25
     dot.BorderSizePixel = 0
     dot.ZIndex = 1
-    dot.Parent = bgAnimContainer
+    dot.Parent = ambientBgLayer
+
     Instance.new("UICorner", dot).CornerRadius = UDim.new(1, 0)
 
-    table.insert(waveDots, {
+    local isRibbonParticle = (i <= 76)
+    table.insert(bgWaveDots, {
         frame = dot,
-        u = (i - 1) / 67,
-        bandOffset = (math.random() - 0.5) * 0.26,
-        phase = math.random() * math.pi * 2,
-        speed = 0.65 + math.random() * 0.75,
-        ampY = 14 + math.random() * 24,
-        driftX = (math.random() - 0.5) * 18
+        baseX = isRibbonParticle and ((i - 1) / 75) or ((i - 77) / 38),
+        baseY = isRibbonParticle and (0.48 + ((i % 9) - 4) * 0.024) or (0.18 + ((i * 19) % 68) * 0.01),
+        phase = i * 0.21,
+        amp = isRibbonParticle and math.random(34, 68) or math.random(14, 30),
+        driftSpeed = 0.55 + (i % 6) * 0.13,
+        baseSize = dotSize,
+        isRibbon = isRibbonParticle
     })
 end
 
@@ -377,36 +446,39 @@ contentContainer.BackgroundTransparency = 1
 contentContainer.ZIndex = 2
 contentContainer.Parent = mainFrame
 
--- Боковая панель
+-- Боковая панель Zelix hub
 local sidebar = Instance.new("Frame")
 sidebar.Name = "Sidebar"
-sidebar.Size = UDim2.new(0, 165, 1, -20)
+sidebar.Size = UDim2.new(0, 166, 1, -20)
 sidebar.Position = UDim2.new(0, 10, 0, 10)
-sidebar.BackgroundColor3 = THEME.BgPanel
-sidebar.BackgroundTransparency = 0.12
+sidebar.BackgroundColor3 = Color3.fromRGB(22, 14, 38)
+sidebar.BackgroundTransparency = 0.25
 sidebar.BorderSizePixel = 0
 sidebar.ZIndex = 2
 sidebar.Parent = contentContainer
 
-Instance.new("UICorner", sidebar).CornerRadius = UDim.new(0, 12)
-addStroke(sidebar, THEME.StrokeSoft, 1, 0.35)
+local sidebarCorner = Instance.new("UICorner") sidebarCorner.CornerRadius = UDim.new(0, 12) sidebarCorner.Parent = sidebar
+local sidebarStroke = Instance.new("UIStroke")
+sidebarStroke.Color = Color3.fromRGB(115, 55, 210)
+sidebarStroke.Thickness = 1
+sidebarStroke.Transparency = 0.55
+sidebarStroke.Parent = sidebar
 
 local logoTexture = Instance.new("ImageLabel")
 logoTexture.Size = UDim2.new(0, 24, 0, 24)
 logoTexture.Position = UDim2.new(0, 10, 0, 14)
 logoTexture.BackgroundTransparency = 1
 logoTexture.Image = LOGO_TEXTURE_ID
-logoTexture.ScaleType = Enum.ScaleType.Fit
 logoTexture.ZIndex = 3
 logoTexture.Parent = sidebar
 
 local logoLabel = Instance.new("TextLabel")
 logoLabel.Size = UDim2.new(1, -42, 0, 20)
-logoLabel.Position = UDim2.new(0, 40, 0, 10)
+logoLabel.Position = UDim2.new(0, 38, 0, 10)
 logoLabel.BackgroundTransparency = 1
 logoLabel.Font = Enum.Font.GothamBold
 logoLabel.Text = "Zelix hub"
-logoLabel.TextColor3 = THEME.TextBright
+logoLabel.TextColor3 = Color3.fromRGB(218, 168, 255)
 logoLabel.TextSize = 14
 logoLabel.TextXAlignment = Enum.TextXAlignment.Left
 logoLabel.ZIndex = 3
@@ -415,109 +487,109 @@ logoLabel.Parent = sidebar
 local versionLabel = Instance.new("TextLabel")
 versionLabel.Name = "VersionLabel"
 versionLabel.Size = UDim2.new(1, -42, 0, 16)
-versionLabel.Position = UDim2.new(0, 40, 0, 28)
+versionLabel.Position = UDim2.new(0, 38, 0, 28)
 versionLabel.BackgroundTransparency = 1
 versionLabel.Font = Enum.Font.GothamBold
-versionLabel.Text = "v0.1 • NEON"
-versionLabel.TextColor3 = THEME.AccentViolet
+versionLabel.Text = "v0.1"
+versionLabel.TextColor3 = Color3.fromRGB(150, 112, 205)
 versionLabel.TextSize = 10
 versionLabel.TextXAlignment = Enum.TextXAlignment.Left
 versionLabel.ZIndex = 3
 versionLabel.Parent = sidebar
 
 -- СЕКЦИЯ MODULES (Main + Visuals + Teleport)
-local modulesIconImg = Instance.new("ImageLabel") modulesIconImg.Size = UDim2.new(0, 14, 0, 14) modulesIconImg.Position = UDim2.new(0, 12, 0, 56) modulesIconImg.BackgroundTransparency = 1 modulesIconImg.Image = MODULES_ICON modulesIconImg.ImageColor3 = THEME.AccentViolet modulesIconImg.ZIndex = 3 modulesIconImg.Parent = sidebar
-local modulesHeader = Instance.new("TextLabel") modulesHeader.Size = UDim2.new(0, 100, 0, 20) modulesHeader.Position = UDim2.new(0, 32, 0, 53) modulesHeader.BackgroundTransparency = 1 modulesHeader.Font = Enum.Font.GothamBold modulesHeader.Text = "Modules" modulesHeader.TextColor3 = THEME.TextMuted modulesHeader.TextSize = 11 modulesHeader.TextXAlignment = Enum.TextXAlignment.Left modulesHeader.ZIndex = 3 modulesHeader.Parent = sidebar
+local modulesIconImg = Instance.new("ImageLabel") modulesIconImg.Size = UDim2.new(0, 14, 0, 14) modulesIconImg.Position = UDim2.new(0, 12, 0, 56) modulesIconImg.BackgroundTransparency = 1 modulesIconImg.Image = MODULES_ICON modulesIconImg.ImageColor3 = Color3.fromRGB(185, 130, 255) modulesIconImg.ZIndex = 3 modulesIconImg.Parent = sidebar
+local modulesHeader = Instance.new("TextLabel") modulesHeader.Size = UDim2.new(0, 110, 0, 20) modulesHeader.Position = UDim2.new(0, 32, 0, 53) modulesHeader.BackgroundTransparency = 1 modulesHeader.Font = Enum.Font.GothamBold modulesHeader.Text = "Modules" modulesHeader.TextColor3 = Color3.fromRGB(185, 130, 255) modulesHeader.TextSize = 11 modulesHeader.TextXAlignment = Enum.TextXAlignment.Left modulesHeader.ZIndex = 3 modulesHeader.Parent = sidebar
 
 local mainTabBtn = Instance.new("TextButton")
-mainTabBtn.Size = UDim2.new(1, -20, 0, 27)
+mainTabBtn.Size = UDim2.new(1, -20, 0, 26)
 mainTabBtn.Position = UDim2.new(0, 10, 0, 76)
-mainTabBtn.BackgroundColor3 = THEME.AccentPurple
+mainTabBtn.BackgroundColor3 = Color3.fromRGB(115, 48, 225)
 mainTabBtn.BackgroundTransparency = 0.15
 mainTabBtn.Text = "             Main"
-mainTabBtn.TextColor3 = THEME.TextBright
+mainTabBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 mainTabBtn.TextSize = 11
 mainTabBtn.Font = Enum.Font.GothamBold
 mainTabBtn.TextXAlignment = Enum.TextXAlignment.Left
 mainTabBtn.ZIndex = 3
 mainTabBtn.Parent = sidebar
 
-Instance.new("UICorner", mainTabBtn).CornerRadius = UDim.new(0, 7)
-local mainIconImg = Instance.new("ImageLabel") mainIconImg.Size = UDim2.new(0, 14, 0, 14) mainIconImg.Position = UDim2.new(0, 12, 0, 6.5) mainIconImg.BackgroundTransparency = 1 mainIconImg.Image = MAIN_ICON mainIconImg.ZIndex = 4 mainIconImg.Parent = mainTabBtn
+local mainTabCorner = Instance.new("UICorner") mainTabCorner.CornerRadius = UDim.new(0, 7) mainTabCorner.Parent = mainTabBtn
+local mainIconImg = Instance.new("ImageLabel") mainIconImg.Size = UDim2.new(0, 14, 0, 14) mainIconImg.Position = UDim2.new(0, 12, 0, 6) mainIconImg.BackgroundTransparency = 1 mainIconImg.Image = MAIN_ICON mainIconImg.ZIndex = 4 mainIconImg.Parent = mainTabBtn
 
 local visualsTabBtn = Instance.new("TextButton")
-visualsTabBtn.Size = UDim2.new(1, -20, 0, 27)
-visualsTabBtn.Position = UDim2.new(0, 10, 0, 107)
-visualsTabBtn.BackgroundColor3 = THEME.BgCard
-visualsTabBtn.BackgroundTransparency = 0.35
+visualsTabBtn.Size = UDim2.new(1, -20, 0, 26)
+visualsTabBtn.Position = UDim2.new(0, 10, 0, 106)
+visualsTabBtn.BackgroundColor3 = Color3.fromRGB(32, 20, 56)
+visualsTabBtn.BackgroundTransparency = 0.45
 visualsTabBtn.Text = "             Visuals"
-visualsTabBtn.TextColor3 = THEME.TextMuted
+visualsTabBtn.TextColor3 = Color3.fromRGB(185, 162, 220)
 visualsTabBtn.TextSize = 11
 visualsTabBtn.Font = Enum.Font.GothamMedium
 visualsTabBtn.TextXAlignment = Enum.TextXAlignment.Left
 visualsTabBtn.ZIndex = 3
 visualsTabBtn.Parent = sidebar
 
-Instance.new("UICorner", visualsTabBtn).CornerRadius = UDim.new(0, 7)
-local visualsIconImg = Instance.new("ImageLabel") visualsIconImg.Size = UDim2.new(0, 14, 0, 14) visualsIconImg.Position = UDim2.new(0, 12, 0, 6.5) visualsIconImg.BackgroundTransparency = 1 visualsIconImg.Image = VISUALS_ICON visualsIconImg.ZIndex = 4 visualsIconImg.Parent = visualsTabBtn
+local visualsTabCorner = Instance.new("UICorner") visualsTabCorner.CornerRadius = UDim.new(0, 7) visualsTabCorner.Parent = visualsTabBtn
+local visualsIconImg = Instance.new("ImageLabel") visualsIconImg.Size = UDim2.new(0, 14, 0, 14) visualsIconImg.Position = UDim2.new(0, 12, 0, 6) visualsIconImg.BackgroundTransparency = 1 visualsIconImg.Image = VISUALS_ICON visualsIconImg.ZIndex = 4 visualsIconImg.Parent = visualsTabBtn
 
 local teleportTabBtn = Instance.new("TextButton")
-teleportTabBtn.Size = UDim2.new(1, -20, 0, 27)
-teleportTabBtn.Position = UDim2.new(0, 10, 0, 138)
-teleportTabBtn.BackgroundColor3 = THEME.BgCard
-teleportTabBtn.BackgroundTransparency = 0.35
+teleportTabBtn.Size = UDim2.new(1, -20, 0, 26)
+teleportTabBtn.Position = UDim2.new(0, 10, 0, 136)
+teleportTabBtn.BackgroundColor3 = Color3.fromRGB(32, 20, 56)
+teleportTabBtn.BackgroundTransparency = 0.45
 teleportTabBtn.Text = "             Teleport"
-teleportTabBtn.TextColor3 = THEME.TextMuted
+teleportTabBtn.TextColor3 = Color3.fromRGB(185, 162, 220)
 teleportTabBtn.TextSize = 11
 teleportTabBtn.Font = Enum.Font.GothamMedium
 teleportTabBtn.TextXAlignment = Enum.TextXAlignment.Left
 teleportTabBtn.ZIndex = 3
 teleportTabBtn.Parent = sidebar
 
-Instance.new("UICorner", teleportTabBtn).CornerRadius = UDim.new(0, 7)
-local teleportIconImg = Instance.new("ImageLabel") teleportIconImg.Size = UDim2.new(0, 14, 0, 14) teleportIconImg.Position = UDim2.new(0, 12, 0, 6.5) teleportIconImg.BackgroundTransparency = 1 teleportIconImg.Image = TELEPORT_ICON teleportIconImg.ZIndex = 4 teleportIconImg.Parent = teleportTabBtn
+local teleportTabCorner = Instance.new("UICorner") teleportTabCorner.CornerRadius = UDim.new(0, 7) teleportTabCorner.Parent = teleportTabBtn
+local teleportIconImg = Instance.new("ImageLabel") teleportIconImg.Size = UDim2.new(0, 14, 0, 14) teleportIconImg.Position = UDim2.new(0, 12, 0, 6) teleportIconImg.BackgroundTransparency = 1 teleportIconImg.Image = TELEPORT_ICON teleportIconImg.ZIndex = 4 teleportIconImg.Parent = teleportTabBtn
 
 -- СЕКЦИЯ SETTINGS (Language + Configs)
-local settingsIconImg = Instance.new("ImageLabel") settingsIconImg.Size = UDim2.new(0, 14, 0, 14) settingsIconImg.Position = UDim2.new(0, 12, 0, 178) settingsIconImg.BackgroundTransparency = 1 settingsIconImg.Image = SETTINGS_ICON settingsIconImg.ImageColor3 = THEME.AccentViolet settingsIconImg.ZIndex = 3 settingsIconImg.Parent = sidebar
-local settingsHeader = Instance.new("TextLabel") settingsHeader.Size = UDim2.new(0, 100, 0, 20) settingsHeader.Position = UDim2.new(0, 32, 0, 175) settingsHeader.BackgroundTransparency = 1 settingsHeader.Font = Enum.Font.GothamBold settingsHeader.Text = "Settings" settingsHeader.TextColor3 = THEME.TextMuted settingsHeader.TextSize = 11 settingsHeader.TextXAlignment = Enum.TextXAlignment.Left settingsHeader.ZIndex = 3 settingsHeader.Parent = sidebar
+local settingsIconImg = Instance.new("ImageLabel") settingsIconImg.Size = UDim2.new(0, 14, 0, 14) settingsIconImg.Position = UDim2.new(0, 12, 0, 175) settingsIconImg.BackgroundTransparency = 1 settingsIconImg.Image = SETTINGS_ICON settingsIconImg.ImageColor3 = Color3.fromRGB(185, 130, 255) settingsIconImg.ZIndex = 3 settingsIconImg.Parent = sidebar
+local settingsHeader = Instance.new("TextLabel") settingsHeader.Size = UDim2.new(0, 110, 0, 20) settingsHeader.Position = UDim2.new(0, 32, 0, 172) settingsHeader.BackgroundTransparency = 1 settingsHeader.Font = Enum.Font.GothamBold settingsHeader.Text = "Settings" settingsHeader.TextColor3 = Color3.fromRGB(185, 130, 255) settingsHeader.TextSize = 11 settingsHeader.TextXAlignment = Enum.TextXAlignment.Left settingsHeader.ZIndex = 3 settingsHeader.Parent = sidebar
 
 local languageTabBtn = Instance.new("TextButton")
-languageTabBtn.Size = UDim2.new(1, -20, 0, 27)
-languageTabBtn.Position = UDim2.new(0, 10, 0, 199)
-languageTabBtn.BackgroundColor3 = THEME.BgCard
-languageTabBtn.BackgroundTransparency = 0.35
+languageTabBtn.Size = UDim2.new(1, -20, 0, 26)
+languageTabBtn.Position = UDim2.new(0, 10, 0, 196)
+languageTabBtn.BackgroundColor3 = Color3.fromRGB(32, 20, 56)
+languageTabBtn.BackgroundTransparency = 0.45
 languageTabBtn.Text = "             Language"
-languageTabBtn.TextColor3 = THEME.TextMuted
+languageTabBtn.TextColor3 = Color3.fromRGB(185, 162, 220)
 languageTabBtn.TextSize = 11
 languageTabBtn.Font = Enum.Font.GothamMedium
 languageTabBtn.TextXAlignment = Enum.TextXAlignment.Left
 languageTabBtn.ZIndex = 3
 languageTabBtn.Parent = sidebar
 
-Instance.new("UICorner", languageTabBtn).CornerRadius = UDim.new(0, 7)
-local languageIconImg = Instance.new("ImageLabel") languageIconImg.Size = UDim2.new(0, 14, 0, 14) languageIconImg.Position = UDim2.new(0, 12, 0, 6.5) languageIconImg.BackgroundTransparency = 1 languageIconImg.Image = LANGUAGE_ICON languageIconImg.ZIndex = 4 languageIconImg.Parent = languageTabBtn
+local languageTabCorner = Instance.new("UICorner") languageTabCorner.CornerRadius = UDim.new(0, 7) languageTabCorner.Parent = languageTabBtn
+local languageIconImg = Instance.new("ImageLabel") languageIconImg.Size = UDim2.new(0, 14, 0, 14) languageIconImg.Position = UDim2.new(0, 12, 0, 6) languageIconImg.BackgroundTransparency = 1 languageIconImg.Image = LANGUAGE_ICON languageIconImg.ZIndex = 4 languageIconImg.Parent = languageTabBtn
 
 local configTabBtn = Instance.new("TextButton")
-configTabBtn.Size = UDim2.new(1, -20, 0, 27)
-configTabBtn.Position = UDim2.new(0, 10, 0, 230)
-configTabBtn.BackgroundColor3 = THEME.BgCard
-configTabBtn.BackgroundTransparency = 0.35
+configTabBtn.Size = UDim2.new(1, -20, 0, 26)
+configTabBtn.Position = UDim2.new(0, 10, 0, 226)
+configTabBtn.BackgroundColor3 = Color3.fromRGB(32, 20, 56)
+configTabBtn.BackgroundTransparency = 0.45
 configTabBtn.Text = "             Configs"
-configTabBtn.TextColor3 = THEME.TextMuted
+configTabBtn.TextColor3 = Color3.fromRGB(185, 162, 220)
 configTabBtn.TextSize = 11
 configTabBtn.Font = Enum.Font.GothamMedium
 configTabBtn.TextXAlignment = Enum.TextXAlignment.Left
 configTabBtn.ZIndex = 3
 configTabBtn.Parent = sidebar
 
-Instance.new("UICorner", configTabBtn).CornerRadius = UDim.new(0, 7)
-local configIconImg = Instance.new("ImageLabel") configIconImg.Size = UDim2.new(0, 14, 0, 14) configIconImg.Position = UDim2.new(0, 12, 0, 6.5) configIconImg.BackgroundTransparency = 1 configIconImg.Image = CONFIGS_ICON configIconImg.ZIndex = 4 configIconImg.Parent = configTabBtn
+local configTabCorner = Instance.new("UICorner") configTabCorner.CornerRadius = UDim.new(0, 7) configTabCorner.Parent = configTabBtn
+local configIconImg = Instance.new("ImageLabel") configIconImg.Size = UDim2.new(0, 14, 0, 14) configIconImg.Position = UDim2.new(0, 12, 0, 6) configIconImg.BackgroundTransparency = 1 configIconImg.Image = CONFIGS_ICON configIconImg.ZIndex = 4 configTabBtn.Parent = sidebar
 
 -- Верхняя панель
 local topBarArea = Instance.new("Frame")
 topBarArea.Name = "TopBarArea"
-topBarArea.Size = UDim2.new(1, -195, 0, 45)
-topBarArea.Position = UDim2.new(0, 182, 0, 10)
+topBarArea.Size = UDim2.new(1, -196, 0, 45)
+topBarArea.Position = UDim2.new(0, 184, 0, 10)
 topBarArea.BackgroundTransparency = 1
 topBarArea.ZIndex = 2
 topBarArea.Parent = contentContainer
@@ -525,24 +597,23 @@ topBarArea.Parent = contentContainer
 local searchBar = Instance.new("Frame")
 searchBar.Size = UDim2.new(0, 190, 0, 30)
 searchBar.Position = UDim2.new(0, 0, 0, 5)
-searchBar.BackgroundColor3 = THEME.BgPanel
-searchBar.BackgroundTransparency = 0.15
+searchBar.BackgroundColor3 = Color3.fromRGB(24, 15, 42)
+searchBar.BackgroundTransparency = 0.25
 searchBar.ZIndex = 2
 searchBar.Parent = topBarArea
 
-Instance.new("UICorner", searchBar).CornerRadius = UDim.new(0, 8)
-addStroke(searchBar, THEME.StrokeSoft, 1, 0.35)
-
-local searchIcon = Instance.new("TextLabel") searchIcon.Size = UDim2.new(0, 25, 1, 0) searchIcon.Position = UDim2.new(0, 8, 0, 0) searchIcon.BackgroundTransparency = 1 searchIcon.Text = "🔍" searchIcon.TextColor3 = THEME.AccentViolet searchIcon.TextSize = 12 searchIcon.ZIndex = 3 searchIcon.Parent = searchBar
+local searchCorner = Instance.new("UICorner") searchCorner.CornerRadius = UDim.new(0, 8) searchCorner.Parent = searchBar
+local searchStroke = Instance.new("UIStroke") searchStroke.Color = Color3.fromRGB(125, 60, 225) searchStroke.Thickness = 1 searchStroke.Transparency = 0.55 searchStroke.Parent = searchBar
+local searchIcon = Instance.new("TextLabel") searchIcon.Size = UDim2.new(0, 25, 1, 0) searchIcon.Position = UDim2.new(0, 8, 0, 0) searchIcon.BackgroundTransparency = 1 searchIcon.Text = "🔍" searchIcon.TextColor3 = Color3.fromRGB(190, 140, 255) searchIcon.TextSize = 12 searchIcon.ZIndex = 3 searchIcon.Parent = searchBar
 
 local searchInput = Instance.new("TextBox")
 searchInput.Size = UDim2.new(1, -35, 1, 0)
 searchInput.Position = UDim2.new(0, 30, 0, 0)
 searchInput.BackgroundTransparency = 1
 searchInput.PlaceholderText = "Поиск..."
-searchInput.PlaceholderColor3 = THEME.TextMuted
+searchInput.PlaceholderColor3 = Color3.fromRGB(145, 115, 190)
 searchInput.Text = ""
-searchInput.TextColor3 = THEME.TextBright
+searchInput.TextColor3 = Color3.fromRGB(242, 226, 255)
 searchInput.TextSize = 12
 searchInput.Font = Enum.Font.Gotham
 searchInput.ZIndex = 3
@@ -561,7 +632,7 @@ profileName.Position = UDim2.new(0, 0, 0, 0)
 profileName.BackgroundTransparency = 1
 profileName.Font = Enum.Font.GothamBold
 profileName.Text = player.DisplayName
-profileName.TextColor3 = THEME.TextBright
+profileName.TextColor3 = Color3.fromRGB(238, 215, 255)
 profileName.TextSize = 11
 profileName.TextXAlignment = Enum.TextXAlignment.Right
 profileName.ZIndex = 6
@@ -570,54 +641,51 @@ profileName.Parent = profileFrame
 local profileAvatar = Instance.new("ImageLabel")
 profileAvatar.Size = UDim2.new(0, 24, 0, 24)
 profileAvatar.Position = UDim2.new(1, -26, 0, 3)
-profileAvatar.BackgroundColor3 = THEME.BgCardAlt
+profileAvatar.BackgroundColor3 = Color3.fromRGB(45, 24, 78)
 profileAvatar.BorderSizePixel = 0
 profileAvatar.Image = "rbxthumb://type=AvatarHeadShot&id=" .. player.UserId .. "&w=150&h=150"
 profileAvatar.ZIndex = 6
 profileAvatar.Parent = profileFrame
 
-Instance.new("UICorner", profileAvatar).CornerRadius = UDim.new(1, 0)
-addStroke(profileAvatar, THEME.AccentPurple, 1.2, 0.2)
+local avatarCorner = Instance.new("UICorner") avatarCorner.CornerRadius = UDim.new(1, 0) avatarCorner.Parent = profileAvatar
 
 local minBtn = Instance.new("TextButton")
 minBtn.Name = "MinimizeButton"
 minBtn.Size = UDim2.new(0, 24, 0, 24)
 minBtn.Position = UDim2.new(1, -65, 0, 8)
-minBtn.BackgroundColor3 = THEME.BgCardAlt
-minBtn.BackgroundTransparency = 0.15
+minBtn.BackgroundColor3 = Color3.fromRGB(48, 26, 82)
+minBtn.BackgroundTransparency = 0.25
 minBtn.Text = "−"
-minBtn.TextColor3 = THEME.TextBright
+minBtn.TextColor3 = Color3.fromRGB(220, 185, 255)
 minBtn.TextSize = 14
 minBtn.Font = Enum.Font.GothamBold
 minBtn.ZIndex = 10
 minBtn.Parent = topBarArea
 
-Instance.new("UICorner", minBtn).CornerRadius = UDim.new(0, 6)
-addStroke(minBtn, THEME.StrokeSoft, 1, 0.3)
+local minCorner = Instance.new("UICorner") minCorner.CornerRadius = UDim.new(0, 6) minCorner.Parent = minBtn
 
 local closeBtn = Instance.new("TextButton")
 closeBtn.Name = "CloseButton"
 closeBtn.Size = UDim2.new(0, 24, 0, 24)
 closeBtn.Position = UDim2.new(1, -35, 0, 8)
-closeBtn.BackgroundColor3 = Color3.fromRGB(58, 18, 34)
-closeBtn.BackgroundTransparency = 0.15
+closeBtn.BackgroundColor3 = Color3.fromRGB(72, 22, 54)
+closeBtn.BackgroundTransparency = 0.25
 closeBtn.Text = "×"
-closeBtn.TextColor3 = THEME.DangerRed
+closeBtn.TextColor3 = Color3.fromRGB(255, 130, 175)
 closeBtn.TextSize = 16
 closeBtn.Font = Enum.Font.GothamBold
 closeBtn.ZIndex = 10
 closeBtn.Parent = topBarArea
 
-Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0, 6)
-addStroke(closeBtn, THEME.DangerRed, 1, 0.45)
+local closeCorner = Instance.new("UICorner") closeCorner.CornerRadius = UDim.new(0, 6) closeCorner.Parent = closeBtn
 
 local sectionTitle = Instance.new("TextLabel")
-sectionTitle.Size = UDim2.new(1, -195, 0, 20)
-sectionTitle.Position = UDim2.new(0, 182, 0, 52)
+sectionTitle.Size = UDim2.new(1, -196, 0, 20)
+sectionTitle.Position = UDim2.new(0, 184, 0, 52)
 sectionTitle.BackgroundTransparency = 1
 sectionTitle.Font = Enum.Font.GothamBold
 sectionTitle.Text = "Modules / Main"
-sectionTitle.TextColor3 = THEME.AccentViolet
+sectionTitle.TextColor3 = Color3.fromRGB(178, 128, 255)
 sectionTitle.TextSize = 12
 sectionTitle.TextXAlignment = Enum.TextXAlignment.Left
 sectionTitle.ZIndex = 2
@@ -626,13 +694,13 @@ sectionTitle.Parent = contentContainer
 -- Страницы
 local mainPage = Instance.new("ScrollingFrame")
 mainPage.Name = "MainPage"
-mainPage.Size = UDim2.new(1, -195, 1, -90)
-mainPage.Position = UDim2.new(0, 182, 0, 78)
+mainPage.Size = UDim2.new(1, -196, 1, -90)
+mainPage.Position = UDim2.new(0, 184, 0, 78)
 mainPage.BackgroundTransparency = 1
 mainPage.CanvasSize = UDim2.new(0, 0, 0, 0)
 mainPage.AutomaticCanvasSize = Enum.AutomaticSize.Y
 mainPage.ScrollBarThickness = 4
-mainPage.ScrollBarImageColor3 = THEME.AccentPurple
+mainPage.ScrollBarImageColor3 = Color3.fromRGB(150, 75, 255)
 mainPage.Visible = true
 mainPage.ZIndex = 2
 mainPage.Parent = contentContainer
@@ -649,13 +717,13 @@ mainPadding.Parent = mainPage
 
 local visualsPage = Instance.new("ScrollingFrame")
 visualsPage.Name = "VisualsPage"
-visualsPage.Size = UDim2.new(1, -195, 1, -90)
-visualsPage.Position = UDim2.new(0, 182, 0, 78)
+visualsPage.Size = UDim2.new(1, -196, 1, -90)
+visualsPage.Position = UDim2.new(0, 184, 0, 78)
 visualsPage.BackgroundTransparency = 1
 visualsPage.CanvasSize = UDim2.new(0, 0, 0, 0)
 visualsPage.AutomaticCanvasSize = Enum.AutomaticSize.Y
 visualsPage.ScrollBarThickness = 4
-visualsPage.ScrollBarImageColor3 = THEME.AccentPurple
+visualsPage.ScrollBarImageColor3 = Color3.fromRGB(150, 75, 255)
 visualsPage.Visible = false
 visualsPage.ZIndex = 2
 visualsPage.Parent = contentContainer
@@ -672,42 +740,58 @@ visualsPadding.Parent = visualsPage
 
 local teleportPage = Instance.new("ScrollingFrame")
 teleportPage.Name = "TeleportPage"
-teleportPage.Size = UDim2.new(1, -195, 1, -90)
-teleportPage.Position = UDim2.new(0, 182, 0, 78)
+teleportPage.Size = UDim2.new(1, -196, 1, -90)
+teleportPage.Position = UDim2.new(0, 184, 0, 78)
 teleportPage.BackgroundTransparency = 1
 teleportPage.CanvasSize = UDim2.new(0, 0, 0, 0)
 teleportPage.AutomaticCanvasSize = Enum.AutomaticSize.Y
 teleportPage.ScrollBarThickness = 4
-teleportPage.ScrollBarImageColor3 = THEME.AccentPurple
+teleportPage.ScrollBarImageColor3 = Color3.fromRGB(150, 75, 255)
 teleportPage.Visible = false
 teleportPage.ZIndex = 2
 teleportPage.Parent = contentContainer
 
 local languagePage = Instance.new("ScrollingFrame")
 languagePage.Name = "LanguagePage"
-languagePage.Size = UDim2.new(1, -195, 1, -90)
-languagePage.Position = UDim2.new(0, 182, 0, 78)
+languagePage.Size = UDim2.new(1, -196, 1, -90)
+languagePage.Position = UDim2.new(0, 184, 0, 78)
 languagePage.BackgroundTransparency = 1
 languagePage.CanvasSize = UDim2.new(0, 0, 0, 300)
 languagePage.ScrollBarThickness = 3
-languagePage.ScrollBarImageColor3 = THEME.AccentPurple
 languagePage.Visible = false
 languagePage.ZIndex = 2
 languagePage.Parent = contentContainer
 
 local configPage = Instance.new("ScrollingFrame")
 configPage.Name = "ConfigPage"
-configPage.Size = UDim2.new(1, -195, 1, -90)
-configPage.Position = UDim2.new(0, 182, 0, 78)
+configPage.Size = UDim2.new(1, -196, 1, -90)
+configPage.Position = UDim2.new(0, 184, 0, 78)
 configPage.BackgroundTransparency = 1
 configPage.CanvasSize = UDim2.new(0, 0, 0, 300)
 configPage.ScrollBarThickness = 3
-configPage.ScrollBarImageColor3 = THEME.AccentPurple
 configPage.Visible = false
 configPage.ZIndex = 2
 configPage.Parent = contentContainer
 
 local refreshTeleportList
+
+local function setTabButtonActive(btn, active)
+    if active then
+        TweenService:Create(btn, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+            BackgroundColor3 = Color3.fromRGB(115, 48, 225),
+            BackgroundTransparency = 0.15,
+            TextColor3 = Color3.fromRGB(255, 255, 255)
+        }):Play()
+        btn.Font = Enum.Font.GothamBold
+    else
+        TweenService:Create(btn, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+            BackgroundColor3 = Color3.fromRGB(32, 20, 56),
+            BackgroundTransparency = 0.45,
+            TextColor3 = Color3.fromRGB(185, 162, 220)
+        }):Play()
+        btn.Font = Enum.Font.GothamMedium
+    end
+end
 
 local function switchTab(tabName)
     playClickSound()
@@ -730,20 +814,11 @@ local function switchTab(tabName)
         sectionTitle.Text = "Settings / Configs"
     end
 
-    local tabMap = {
-        Main = mainTabBtn,
-        Visuals = visualsTabBtn,
-        Teleport = teleportTabBtn,
-        Language = languageTabBtn,
-        Configs = configTabBtn
-    }
-    for name, btn in pairs(tabMap) do
-        local active = (name == tabName)
-        btn.BackgroundColor3 = active and THEME.AccentPurple or THEME.BgCard
-        btn.BackgroundTransparency = active and 0.15 or 0.35
-        btn.TextColor3 = active and THEME.TextBright or THEME.TextMuted
-        btn.Font = active and Enum.Font.GothamBold or Enum.Font.GothamMedium
-    end
+    setTabButtonActive(mainTabBtn, tabName == "Main")
+    setTabButtonActive(visualsTabBtn, tabName == "Visuals")
+    setTabButtonActive(teleportTabBtn, tabName == "Teleport")
+    setTabButtonActive(languageTabBtn, tabName == "Language")
+    setTabButtonActive(configTabBtn, tabName == "Configs")
 end
 
 mainTabBtn.MouseButton1Click:Connect(function() switchTab("Main") end)
@@ -780,7 +855,6 @@ local angelWingsEnabled = false
 local currentParticleType = "🌸"
 local worldParticleType = "🌸"
 local worldSpeedMultiplier = 1.0
-local currentLanguage = "RU"
 
 local originalAmbient = Lighting.Ambient
 local originalOutdoorAmbient = Lighting.OutdoorAmbient
@@ -861,11 +935,11 @@ local function equipMartialArtistInGame()
     end)
 end
 
-local translatableCards = {}
-local function updateAllTranslations()
+updateAllTranslations = function()
     for _, item in ipairs(translatableCards) do
-        item.lbl.Text = (currentLanguage == "RU") and item.ru or item.en
+        item.lbl.Text = (currentLanguage == "EN") and item.en or item.ru
     end
+    searchInput.PlaceholderText = tr("Поиск...", "Search...")
 end
 
 local cardOrderIndex = 0
@@ -877,15 +951,19 @@ local function createModuleCard(parent, title, descRu, descEn, callbackToggle, h
     local card = Instance.new("Frame")
     card.Name = "ModuleCard"
     card.Size = UDim2.new(0, 215, 0, 70)
-    card.BackgroundColor3 = THEME.BgCard
-    card.BackgroundTransparency = 0.14
+    card.BackgroundColor3 = Color3.fromRGB(24, 15, 42)
+    card.BackgroundTransparency = 0.22
     card.BorderSizePixel = 0
     card.ZIndex = 2
     card.LayoutOrder = cardOrderIndex
     card.Parent = parent
 
-    Instance.new("UICorner", card).CornerRadius = UDim.new(0, 10)
-    local cardStroke = addStroke(card, THEME.StrokeSoft, 1, 0.4)
+    local corner = Instance.new("UICorner") corner.CornerRadius = UDim.new(0, 10) corner.Parent = card
+    local cardStroke = Instance.new("UIStroke")
+    cardStroke.Color = Color3.fromRGB(130, 62, 235)
+    cardStroke.Thickness = 1
+    cardStroke.Transparency = 0.55
+    cardStroke.Parent = card
 
     local tLbl = Instance.new("TextLabel")
     tLbl.Name = "TitleLabel"
@@ -894,7 +972,7 @@ local function createModuleCard(parent, title, descRu, descEn, callbackToggle, h
     tLbl.BackgroundTransparency = 1
     tLbl.Font = Enum.Font.GothamBold
     tLbl.Text = title
-    tLbl.TextColor3 = THEME.TextBright
+    tLbl.TextColor3 = Color3.fromRGB(240, 222, 255)
     tLbl.TextSize = 13
     tLbl.TextXAlignment = Enum.TextXAlignment.Left
     tLbl.ZIndex = 3
@@ -905,8 +983,8 @@ local function createModuleCard(parent, title, descRu, descEn, callbackToggle, h
     dLbl.Position = UDim2.new(0, 12, 0, 36)
     dLbl.BackgroundTransparency = 1
     dLbl.Font = Enum.Font.Gotham
-    dLbl.Text = (currentLanguage == "RU") and descRu or descEn
-    dLbl.TextColor3 = THEME.TextMuted
+    dLbl.Text = tr(descRu, descEn)
+    dLbl.TextColor3 = Color3.fromRGB(158, 128, 205)
     dLbl.TextSize = 10
     dLbl.TextWrapped = true
     dLbl.TextXAlignment = Enum.TextXAlignment.Left
@@ -918,27 +996,16 @@ local function createModuleCard(parent, title, descRu, descEn, callbackToggle, h
     local toggleFrame = Instance.new("Frame")
     toggleFrame.Size = UDim2.new(0, 34, 0, 18)
     toggleFrame.Position = UDim2.new(1, -42, 0, 11)
-    toggleFrame.BackgroundColor3 = THEME.BgDark
+    toggleFrame.BackgroundColor3 = Color3.fromRGB(38, 24, 68)
     toggleFrame.BorderSizePixel = 0
     toggleFrame.ZIndex = 3
     toggleFrame.Parent = card
 
-    Instance.new("UICorner", toggleFrame).CornerRadius = UDim.new(1, 0)
-    local toggleDot = Instance.new("Frame")
-    toggleDot.Size = UDim2.new(0, 14, 0, 14)
-    toggleDot.Position = UDim2.new(0, 2, 0, 2)
-    toggleDot.BackgroundColor3 = THEME.TextMuted
-    toggleDot.BorderSizePixel = 0
-    toggleDot.ZIndex = 4
-    toggleDot.Parent = toggleFrame
-    Instance.new("UICorner", toggleDot).CornerRadius = UDim.new(1, 0)
+    local tCorner = Instance.new("UICorner") tCorner.CornerRadius = UDim.new(1, 0) tCorner.Parent = toggleFrame
+    local toggleDot = Instance.new("Frame") toggleDot.Size = UDim2.new(0, 14, 0, 14) toggleDot.Position = UDim2.new(0, 2, 0, 2) toggleDot.BackgroundColor3 = Color3.fromRGB(150, 122, 195) toggleDot.BorderSizePixel = 0 toggleDot.ZIndex = 4 toggleDot.Parent = toggleFrame
+    local dCorner = Instance.new("UICorner") dCorner.CornerRadius = UDim.new(1, 0) dCorner.Parent = toggleDot
 
-    local clickBtn = Instance.new("TextButton")
-    clickBtn.Size = UDim2.new(1, 0, 1, 0)
-    clickBtn.BackgroundTransparency = 1
-    clickBtn.Text = ""
-    clickBtn.ZIndex = 5
-    clickBtn.Parent = card
+    local clickBtn = Instance.new("TextButton") clickBtn.Size = UDim2.new(1, 0, 1, 0) clickBtn.BackgroundTransparency = 1 clickBtn.Text = "" clickBtn.ZIndex = 5 clickBtn.Parent = card
 
     local isEnabled = false
     local settingsPanelRef = nil
@@ -948,7 +1015,8 @@ local function createModuleCard(parent, title, descRu, descEn, callbackToggle, h
             showAbilityErrorNotification(function()
                 if settingsPanelRef and not settingsPanelRef.Visible then
                     settingsPanelRef.Visible = true
-                    TweenService:Create(card, TweenInfo.new(0.28, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {Size = UDim2.new(0, 215, 0, expandedH)}):Play()
+                    cardStroke.Transparency = 0.25
+                    TweenService:Create(card, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(0, 215, 0, expandedH)}):Play()
                 end
             end)
             return
@@ -963,19 +1031,19 @@ local function createModuleCard(parent, title, descRu, descEn, callbackToggle, h
                     equipMartialArtistInGame()
                 end)
             end
-            TweenService:Create(toggleFrame, TweenInfo.new(0.22, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundColor3 = THEME.AccentPurple}):Play()
-            TweenService:Create(toggleDot, TweenInfo.new(0.22, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Position = UDim2.new(1, -16, 0, 2), BackgroundColor3 = THEME.TextBright}):Play()
-            TweenService:Create(cardStroke, TweenInfo.new(0.22), {Color = THEME.AccentViolet, Transparency = 0.2}):Play()
-            playEnableSound()
+            TweenService:Create(toggleFrame, TweenInfo.new(0.22), {BackgroundColor3 = Color3.fromRGB(142, 64, 245)}):Play()
+            TweenService:Create(toggleDot, TweenInfo.new(0.22), {Position = UDim2.new(1, -16, 0, 2), BackgroundColor3 = Color3.fromRGB(255, 255, 255)}):Play()
+            cardStroke.Transparency = 0.28
+            if not noNotify then playEnableSound() end
         else
-            TweenService:Create(toggleFrame, TweenInfo.new(0.22, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundColor3 = THEME.BgDark}):Play()
-            TweenService:Create(toggleDot, TweenInfo.new(0.22, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Position = UDim2.new(0, 2, 0, 2), BackgroundColor3 = THEME.TextMuted}):Play()
-            TweenService:Create(cardStroke, TweenInfo.new(0.22), {Color = THEME.StrokeSoft, Transparency = 0.4}):Play()
-            playClickSound()
+            TweenService:Create(toggleFrame, TweenInfo.new(0.22), {BackgroundColor3 = Color3.fromRGB(38, 24, 68)}):Play()
+            TweenService:Create(toggleDot, TweenInfo.new(0.22), {Position = UDim2.new(0, 2, 0, 2), BackgroundColor3 = Color3.fromRGB(150, 122, 195)}):Play()
+            cardStroke.Transparency = 0.58
+            if not noNotify then playDisableSound() end
         end
         if callbackToggle then callbackToggle(isEnabled) end
         if not noNotify then
-            local statusStr = isEnabled and "Включено" or "Выключено"
+            local statusStr = isEnabled and tr("Включено", "Enabled") or tr("Выключено", "Disabled")
             showNotification(title, statusStr)
         end
     end
@@ -990,7 +1058,7 @@ local function createModuleCard(parent, title, descRu, descEn, callbackToggle, h
         settingsBtn.Position = UDim2.new(1, -64, 0, 12)
         settingsBtn.BackgroundTransparency = 1
         settingsBtn.Image = GEAR_ICON
-        settingsBtn.ImageColor3 = THEME.AccentViolet
+        settingsBtn.ImageColor3 = Color3.fromRGB(205, 165, 255)
         settingsBtn.ZIndex = 5
         settingsBtn.Parent = card
 
@@ -1012,7 +1080,7 @@ local function createModuleCard(parent, title, descRu, descEn, callbackToggle, h
             local isOpen = not settingsPanel.Visible
             settingsPanel.Visible = isOpen
             local targetH = isOpen and expandedH or 70
-            TweenService:Create(card, TweenInfo.new(0.28, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {Size = UDim2.new(0, 215, 0, targetH)}):Play()
+            TweenService:Create(card, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(0, 215, 0, targetH)}):Play()
         end)
     end
 
@@ -1036,7 +1104,7 @@ end)
 
 -- 1. AutoFarm
 local setAutoFarmUIFunc
-_, setAutoFarmUIFunc = createModuleCard(mainPage, "AutoFarm", "Обычные удары, способности и ульта", "Обычные удары, способности и ульта", function(state)
+_, setAutoFarmUIFunc = createModuleCard(mainPage, "AutoFarm", "Обычные удары, способности и ульта", "Basic attacks, skills and ult", function(state)
     autoFarmEnabled = state
 end, true, function(panel)
     local styleLbl = Instance.new("TextLabel")
@@ -1045,20 +1113,21 @@ end, true, function(panel)
     styleLbl.BackgroundTransparency = 1
     styleLbl.Font = Enum.Font.GothamBold
     styleLbl.Text = "Выберите способность:"
-    styleLbl.TextColor3 = THEME.TextBright
+    styleLbl.TextColor3 = Color3.fromRGB(235, 215, 255)
     styleLbl.TextSize = 10
     styleLbl.TextXAlignment = Enum.TextXAlignment.Left
     styleLbl.ZIndex = 11
     styleLbl.Parent = panel
+    table.insert(translatableCards, {lbl = styleLbl, ru = "Выберите способность:", en = "Select ability:"})
 
     local martialBtn = Instance.new("TextButton")
     martialBtn.Size = UDim2.new(1, 0, 0, 25)
     martialBtn.Position = UDim2.new(0, 0, 0, 17)
-    martialBtn.BackgroundColor3 = THEME.BgCardAlt
+    martialBtn.BackgroundColor3 = Color3.fromRGB(36, 22, 64)
     martialBtn.Text = ""
     martialBtn.ZIndex = 11
     martialBtn.Parent = panel
-    Instance.new("UICorner", martialBtn).CornerRadius = UDim.new(0, 6)
+    local mbC = Instance.new("UICorner") mbC.CornerRadius = UDim.new(0, 6) mbC.Parent = martialBtn
 
     local martialIcon = Instance.new("ImageLabel")
     martialIcon.Size = UDim2.new(0, 16, 0, 16)
@@ -1073,7 +1142,7 @@ end, true, function(panel)
     martialTextLbl.Position = UDim2.new(0, 28, 0, 0)
     martialTextLbl.BackgroundTransparency = 1
     martialTextLbl.Text = "Martial Artist"
-    martialTextLbl.TextColor3 = THEME.TextMuted
+    martialTextLbl.TextColor3 = Color3.fromRGB(190, 165, 225)
     martialTextLbl.TextSize = 10
     martialTextLbl.Font = Enum.Font.GothamBold
     martialTextLbl.TextXAlignment = Enum.TextXAlignment.Left
@@ -1084,15 +1153,15 @@ end, true, function(panel)
         playClickSound()
         if selectedStyle == "MartialArtist" then
             selectedStyle = ""
-            martialBtn.BackgroundColor3 = THEME.BgCardAlt
-            martialTextLbl.TextColor3 = THEME.TextMuted
-            showNotification("AutoFarm", "Способность сброшена")
+            martialBtn.BackgroundColor3 = Color3.fromRGB(36, 22, 64)
+            martialTextLbl.TextColor3 = Color3.fromRGB(190, 165, 225)
+            showNotification("AutoFarm", tr("Способность сброшена", "Ability reset"))
         else
             selectedStyle = "MartialArtist"
-            martialBtn.BackgroundColor3 = THEME.AccentPurple
-            martialTextLbl.TextColor3 = THEME.TextBright
+            martialBtn.BackgroundColor3 = Color3.fromRGB(130, 58, 235)
+            martialTextLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
             equipMartialArtistInGame()
-            showNotification("AutoFarm", "Выбрано: Martial Artist")
+            showNotification("AutoFarm", tr("Выбрано: Martial Artist", "Selected: Martial Artist"))
         end
     end)
 
@@ -1102,81 +1171,82 @@ end, true, function(panel)
     lbl.BackgroundTransparency = 1
     lbl.Font = Enum.Font.GothamBold
     lbl.Text = "Настройки AutoFarm:"
-    lbl.TextColor3 = THEME.TextBright
+    lbl.TextColor3 = Color3.fromRGB(235, 215, 255)
     lbl.TextSize = 10
     lbl.TextXAlignment = Enum.TextXAlignment.Left
     lbl.ZIndex = 11
     lbl.Parent = panel
+    table.insert(translatableCards, {lbl = lbl, ru = "Настройки AutoFarm:", en = "AutoFarm settings:"})
 
     local lockBtn = Instance.new("TextButton")
     lockBtn.Size = UDim2.new(1, 0, 0, 22)
     lockBtn.Position = UDim2.new(0, 0, 0, 64)
-    lockBtn.BackgroundColor3 = THEME.AccentPurple
+    lockBtn.BackgroundColor3 = Color3.fromRGB(130, 58, 235)
     lockBtn.Text = "Фиксация цели: ON"
-    lockBtn.TextColor3 = THEME.TextBright
+    lockBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
     lockBtn.TextSize = 10
     lockBtn.Font = Enum.Font.GothamBold
     lockBtn.ZIndex = 11
     lockBtn.Parent = panel
-    Instance.new("UICorner", lockBtn).CornerRadius = UDim.new(0, 6)
+    local lbC = Instance.new("UICorner") lbC.CornerRadius = UDim.new(0, 6) lbC.Parent = lockBtn
 
     lockBtn.MouseButton1Click:Connect(function()
         playClickSound()
         autoFarmLockTarget = not autoFarmLockTarget
         if autoFarmLockTarget then
-            lockBtn.BackgroundColor3 = THEME.AccentPurple
-            lockBtn.Text = "Фиксация цели: ON"
+            lockBtn.BackgroundColor3 = Color3.fromRGB(130, 58, 235)
+            lockBtn.Text = tr("Фиксация цели: ON", "Target lock: ON")
         else
-            lockBtn.BackgroundColor3 = THEME.BgCardAlt
-            lockBtn.Text = "Фиксация цели: OFF"
+            lockBtn.BackgroundColor3 = Color3.fromRGB(36, 22, 64)
+            lockBtn.Text = tr("Фиксация цели: OFF", "Target lock: OFF")
         end
     end)
 
     local lowHpBtn = Instance.new("TextButton")
     lowHpBtn.Size = UDim2.new(1, 0, 0, 22)
     lowHpBtn.Position = UDim2.new(0, 0, 0, 90)
-    lowHpBtn.BackgroundColor3 = THEME.AccentPurple
+    lowHpBtn.BackgroundColor3 = Color3.fromRGB(130, 58, 235)
     lowHpBtn.Text = "Добивать шотных (<35 HP): ON"
-    lowHpBtn.TextColor3 = THEME.TextBright
+    lowHpBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
     lowHpBtn.TextSize = 10
     lowHpBtn.Font = Enum.Font.GothamBold
     lowHpBtn.ZIndex = 11
     lowHpBtn.Parent = panel
-    Instance.new("UICorner", lowHpBtn).CornerRadius = UDim.new(0, 6)
+    local lhpC = Instance.new("UICorner") lhpC.CornerRadius = UDim.new(0, 6) lhpC.Parent = lowHpBtn
 
     lowHpBtn.MouseButton1Click:Connect(function()
         playClickSound()
         autoFarmLowHpFinisher = not autoFarmLowHpFinisher
         if autoFarmLowHpFinisher then
-            lowHpBtn.BackgroundColor3 = THEME.AccentPurple
-            lowHpBtn.Text = "Добивать шотных (<35 HP): ON"
+            lowHpBtn.BackgroundColor3 = Color3.fromRGB(130, 58, 235)
+            lowHpBtn.Text = tr("Добивать шотных (<35 HP): ON", "Low HP finisher (<35): ON")
         else
-            lowHpBtn.BackgroundColor3 = THEME.BgCardAlt
-            lowHpBtn.Text = "Добивать шотных (<35 HP): OFF"
+            lowHpBtn.BackgroundColor3 = Color3.fromRGB(36, 22, 64)
+            lowHpBtn.Text = tr("Добивать шотных (<35 HP): OFF", "Low HP finisher (<35): OFF")
         end
     end)
 
     local safeZoneBtn = Instance.new("TextButton")
     safeZoneBtn.Size = UDim2.new(1, 0, 0, 22)
     safeZoneBtn.Position = UDim2.new(0, 0, 0, 116)
-    safeZoneBtn.BackgroundColor3 = THEME.AccentPurple
+    safeZoneBtn.BackgroundColor3 = Color3.fromRGB(130, 58, 235)
     safeZoneBtn.Text = "Безопасная зона при ударе: ON"
-    safeZoneBtn.TextColor3 = THEME.TextBright
+    safeZoneBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
     safeZoneBtn.TextSize = 9.5
     safeZoneBtn.Font = Enum.Font.GothamBold
     safeZoneBtn.ZIndex = 11
     safeZoneBtn.Parent = panel
-    Instance.new("UICorner", safeZoneBtn).CornerRadius = UDim.new(0, 6)
+    local szC = Instance.new("UICorner") szC.CornerRadius = UDim.new(0, 6) szC.Parent = safeZoneBtn
 
     safeZoneBtn.MouseButton1Click:Connect(function()
         playClickSound()
         autoFarmSafeZoneOnHit = not autoFarmSafeZoneOnHit
         if autoFarmSafeZoneOnHit then
-            safeZoneBtn.BackgroundColor3 = THEME.AccentPurple
-            safeZoneBtn.Text = "Безопасная зона при ударе: ON"
+            safeZoneBtn.BackgroundColor3 = Color3.fromRGB(130, 58, 235)
+            safeZoneBtn.Text = tr("Безопасная зона при ударе: ON", "Safe zone on hit: ON")
         else
-            safeZoneBtn.BackgroundColor3 = THEME.BgCardAlt
-            safeZoneBtn.Text = "Безопасная зона при ударе: OFF"
+            safeZoneBtn.BackgroundColor3 = Color3.fromRGB(36, 22, 64)
+            safeZoneBtn.Text = tr("Безопасная зона при ударе: OFF", "Safe zone on hit: OFF")
         end
     end)
 end, 236)
@@ -1184,7 +1254,7 @@ setAutoFarmUIState = setAutoFarmUIFunc
 
 -- 2. Aim Assist
 local setAimUIFunc
-_, setAimUIFunc = createModuleCard(mainPage, "Aim Assist", "Автонаведение на цель", "Автонаведение на цель", function(state)
+_, setAimUIFunc = createModuleCard(mainPage, "Aim Assist", "Автонаведение на цель", "Target auto-aim", function(state)
     aimAssistEnabled = state
 end, true, function(panel)
     local lbl = Instance.new("TextLabel")
@@ -1192,47 +1262,50 @@ end, true, function(panel)
     lbl.BackgroundTransparency = 1
     lbl.Font = Enum.Font.GothamBold
     lbl.Text = "Целься в:"
-    lbl.TextColor3 = THEME.TextBright
+    lbl.TextColor3 = Color3.fromRGB(235, 215, 255)
     lbl.TextSize = 11
     lbl.TextXAlignment = Enum.TextXAlignment.Left
     lbl.ZIndex = 11
     lbl.Parent = panel
+    table.insert(translatableCards, {lbl = lbl, ru = "Целься в:", en = "Aim at:"})
 
     local torsoBtn = Instance.new("TextButton")
     torsoBtn.Size = UDim2.new(0, 85, 0, 22)
     torsoBtn.Position = UDim2.new(0, 0, 0, 20)
-    torsoBtn.BackgroundColor3 = THEME.AccentPurple
+    torsoBtn.BackgroundColor3 = Color3.fromRGB(130, 58, 235)
     torsoBtn.Text = "Туловище"
-    torsoBtn.TextColor3 = THEME.TextBright
+    torsoBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
     torsoBtn.TextSize = 10
     torsoBtn.Font = Enum.Font.GothamBold
     torsoBtn.ZIndex = 11
     torsoBtn.Parent = panel
-    Instance.new("UICorner", torsoBtn).CornerRadius = UDim.new(0, 6)
+    local tbC = Instance.new("UICorner") tbC.CornerRadius = UDim.new(0, 6) tbC.Parent = torsoBtn
+    table.insert(translatableCards, {lbl = torsoBtn, ru = "Туловище", en = "Torso"})
 
     local headBtn = Instance.new("TextButton")
     headBtn.Size = UDim2.new(0, 85, 0, 22)
     headBtn.Position = UDim2.new(0, 95, 0, 20)
-    headBtn.BackgroundColor3 = THEME.BgCardAlt
+    headBtn.BackgroundColor3 = Color3.fromRGB(36, 22, 64)
     headBtn.Text = "Голова"
-    headBtn.TextColor3 = THEME.TextMuted
+    headBtn.TextColor3 = Color3.fromRGB(190, 165, 225)
     headBtn.TextSize = 10
     headBtn.Font = Enum.Font.GothamBold
     headBtn.ZIndex = 11
     headBtn.Parent = panel
-    Instance.new("UICorner", headBtn).CornerRadius = UDim.new(0, 6)
+    local hbC = Instance.new("UICorner") hbC.CornerRadius = UDim.new(0, 6) hbC.Parent = headBtn
+    table.insert(translatableCards, {lbl = headBtn, ru = "Голова", en = "Head"})
 
     updateAimButtonsVisual = function(partName)
         if partName == "Torso" then
-            torsoBtn.BackgroundColor3 = THEME.AccentPurple
-            torsoBtn.TextColor3 = THEME.TextBright
-            headBtn.BackgroundColor3 = THEME.BgCardAlt
-            headBtn.TextColor3 = THEME.TextMuted
+            torsoBtn.BackgroundColor3 = Color3.fromRGB(130, 58, 235)
+            torsoBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+            headBtn.BackgroundColor3 = Color3.fromRGB(36, 22, 64)
+            headBtn.TextColor3 = Color3.fromRGB(190, 165, 225)
         else
-            headBtn.BackgroundColor3 = THEME.AccentPurple
-            headBtn.TextColor3 = THEME.TextBright
-            torsoBtn.BackgroundColor3 = THEME.BgCardAlt
-            torsoBtn.TextColor3 = THEME.TextMuted
+            headBtn.BackgroundColor3 = Color3.fromRGB(130, 58, 235)
+            headBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+            torsoBtn.BackgroundColor3 = Color3.fromRGB(36, 22, 64)
+            torsoBtn.TextColor3 = Color3.fromRGB(190, 165, 225)
         end
     end
 
@@ -1245,28 +1318,29 @@ end, true, function(panel)
     sliderLbl.BackgroundTransparency = 1
     sliderLbl.Font = Enum.Font.GothamBold
     sliderLbl.Text = "Плавность:"
-    sliderLbl.TextColor3 = THEME.TextBright
+    sliderLbl.TextColor3 = Color3.fromRGB(235, 215, 255)
     sliderLbl.TextSize = 9
     sliderLbl.TextXAlignment = Enum.TextXAlignment.Left
     sliderLbl.ZIndex = 11
     sliderLbl.Parent = panel
+    table.insert(translatableCards, {lbl = sliderLbl, ru = "Плавность:", en = "Smoothness:"})
 
     local sliderBg = Instance.new("Frame")
     sliderBg.Size = UDim2.new(0, 180, 0, 6)
     sliderBg.Position = UDim2.new(0, 5, 0, 72)
-    sliderBg.BackgroundColor3 = THEME.BgDark
+    sliderBg.BackgroundColor3 = Color3.fromRGB(36, 22, 64)
     sliderBg.BorderSizePixel = 0
     sliderBg.ZIndex = 11
     sliderBg.Parent = panel
-    Instance.new("UICorner", sliderBg).CornerRadius = UDim.new(1, 0)
+    local sBgCorner = Instance.new("UICorner") sBgCorner.CornerRadius = UDim.new(1, 0) sBgCorner.Parent = sliderBg
 
     local sliderFill = Instance.new("Frame")
     sliderFill.Size = UDim2.new(0.5, 0, 1, 0)
-    sliderFill.BackgroundColor3 = THEME.AccentPurple
+    sliderFill.BackgroundColor3 = Color3.fromRGB(155, 75, 255)
     sliderFill.BorderSizePixel = 0
     sliderFill.ZIndex = 12
     sliderFill.Parent = sliderBg
-    Instance.new("UICorner", sliderFill).CornerRadius = UDim.new(1, 0)
+    local sFillCorner = Instance.new("UICorner") sFillCorner.CornerRadius = UDim.new(1, 0) sFillCorner.Parent = sliderFill
 
     local sliderBtn = Instance.new("TextButton")
     sliderBtn.Size = UDim2.new(1, 20, 1, 20)
@@ -1299,7 +1373,7 @@ setAimAssistUIState = setAimUIFunc
 
 -- 3. SpeedHack
 local setSpeedUIFunc
-_, setSpeedUIFunc = createModuleCard(mainPage, "SpeedHack", "Увеличение скорости бега", "Увеличение скорости бега", function(state)
+_, setSpeedUIFunc = createModuleCard(mainPage, "SpeedHack", "Увеличение скорости бега", "Walk speed boost", function(state)
     speedHackEnabled = state
 end, true, function(panel)
     local sliderLbl = Instance.new("TextLabel")
@@ -1308,28 +1382,29 @@ end, true, function(panel)
     sliderLbl.BackgroundTransparency = 1
     sliderLbl.Font = Enum.Font.GothamBold
     sliderLbl.Text = "Скорость (16 - 150):"
-    sliderLbl.TextColor3 = THEME.TextBright
+    sliderLbl.TextColor3 = Color3.fromRGB(235, 215, 255)
     sliderLbl.TextSize = 10
     sliderLbl.TextXAlignment = Enum.TextXAlignment.Left
     sliderLbl.ZIndex = 11
     sliderLbl.Parent = panel
+    table.insert(translatableCards, {lbl = sliderLbl, ru = "Скорость (16 - 150):", en = "Speed (16 - 150):"})
 
     local sliderBg = Instance.new("Frame")
     sliderBg.Size = UDim2.new(0, 180, 0, 6)
     sliderBg.Position = UDim2.new(0, 5, 0, 35)
-    sliderBg.BackgroundColor3 = THEME.BgDark
+    sliderBg.BackgroundColor3 = Color3.fromRGB(36, 22, 64)
     sliderBg.BorderSizePixel = 0
     sliderBg.ZIndex = 11
     sliderBg.Parent = panel
-    Instance.new("UICorner", sliderBg).CornerRadius = UDim.new(1, 0)
+    local sBgCorner = Instance.new("UICorner") sBgCorner.CornerRadius = UDim.new(1, 0) sBgCorner.Parent = sliderBg
 
     local sliderFill = Instance.new("Frame")
     sliderFill.Size = UDim2.new(0.2, 0, 1, 0)
-    sliderFill.BackgroundColor3 = THEME.AccentPurple
+    sliderFill.BackgroundColor3 = Color3.fromRGB(155, 75, 255)
     sliderFill.BorderSizePixel = 0
     sliderFill.ZIndex = 12
     sliderFill.Parent = sliderBg
-    Instance.new("UICorner", sliderFill).CornerRadius = UDim.new(1, 0)
+    local sFillCorner = Instance.new("UICorner") sFillCorner.CornerRadius = UDim.new(1, 0) sFillCorner.Parent = sliderFill
 
     local sliderBtn = Instance.new("TextButton")
     sliderBtn.Size = UDim2.new(1, 20, 1, 20)
@@ -1360,7 +1435,7 @@ end, true, function(panel)
 end)
 setSpeedHackUIState = setSpeedUIFunc
 
-local function enableDragging(frame, handle, onPositionChanged)
+local function enableDragging(frame, handle, onMoved)
     local dragging, dragInput, dragStart, startPos
     handle.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -1370,7 +1445,7 @@ local function enableDragging(frame, handle, onPositionChanged)
             input.Changed:Connect(function()
                 if input.UserInputState == Enum.InputState.End then
                     dragging = false
-                    if onPositionChanged then onPositionChanged(frame.Position) end
+                    if onMoved then onMoved(frame.Position) end
                 end
             end)
         end
@@ -1383,9 +1458,8 @@ local function enableDragging(frame, handle, onPositionChanged)
     UserInputService.InputChanged:Connect(function(input)
         if input == dragInput and dragging then
             local delta = input.Position - dragStart
-            local nextPos = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-            frame.Position = nextPos
-            if onPositionChanged then onPositionChanged(nextPos) end
+            frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+            if onMoved then onMoved(frame.Position) end
         end
     end)
 end
@@ -1394,15 +1468,14 @@ local mobileDashBtn = Instance.new("Frame")
 mobileDashBtn.Name = "MobileDashBtn"
 mobileDashBtn.Size = UDim2.new(0, 60, 0, 60)
 mobileDashBtn.Position = UDim2.new(0.8, 0, 0.6, 0)
-mobileDashBtn.BackgroundColor3 = THEME.AccentPurple
-mobileDashBtn.BackgroundTransparency = 0.15
+mobileDashBtn.BackgroundColor3 = Color3.fromRGB(130, 58, 235)
+mobileDashBtn.BackgroundTransparency = 0.2
 mobileDashBtn.Visible = false
 mobileDashBtn.ZIndex = 200
 mobileDashBtn.Parent = screenGui
 
-Instance.new("UICorner", mobileDashBtn).CornerRadius = UDim.new(1, 0)
-addStroke(mobileDashBtn, THEME.AccentViolet, 1.5, 0.2)
-local mdLbl = Instance.new("TextLabel") mdLbl.Size = UDim2.new(1, 0, 1, 0) mdLbl.BackgroundTransparency = 1 mdLbl.Font = Enum.Font.GothamBold mdLbl.Text = "DASH" mdLbl.TextColor3 = THEME.TextBright mdLbl.TextSize = 13 mdLbl.ZIndex = 201 mdLbl.Parent = mobileDashBtn
+local mdCorner = Instance.new("UICorner") mdCorner.CornerRadius = UDim.new(1, 0) mdCorner.Parent = mobileDashBtn
+local mdLbl = Instance.new("TextLabel") mdLbl.Size = UDim2.new(1, 0, 1, 0) mdLbl.BackgroundTransparency = 1 mdLbl.Font = Enum.Font.GothamBold mdLbl.Text = "DASH" mdLbl.TextColor3 = Color3.fromRGB(255, 255, 255) mdLbl.TextSize = 13 mdLbl.ZIndex = 201 mdLbl.Parent = mobileDashBtn
 local mdClick = Instance.new("TextButton") mdClick.Size = UDim2.new(1, 0, 1, 0) mdClick.BackgroundTransparency = 1 mdClick.Text = "" mdClick.ZIndex = 202 mdClick.Parent = mobileDashBtn
 
 local performFakeDash
@@ -1414,7 +1487,7 @@ end)
 
 -- 4. Fake Dash
 local setDashUIFunc
-_, setDashUIFunc = createModuleCard(mainPage, "Fake Dash", "Анимация и перемещение рывка без урона", "Анимация и перемещение рывка без урона", function(state)
+_, setDashUIFunc = createModuleCard(mainPage, "Fake Dash", "Анимация и перемещение рывка без урона", "Dash animation and movement without damage", function(state)
     fakeDashEnabled = state
     if not fakeDashEnabled then
         mobileDashBtn.Visible = false
@@ -1428,30 +1501,31 @@ end, true, function(panel)
     keyLbl.BackgroundTransparency = 1
     keyLbl.Font = Enum.Font.GothamBold
     keyLbl.Text = "Клавиша рывка (ПК):"
-    keyLbl.TextColor3 = THEME.TextBright
+    keyLbl.TextColor3 = Color3.fromRGB(235, 215, 255)
     keyLbl.TextSize = 10
     keyLbl.TextXAlignment = Enum.TextXAlignment.Left
     keyLbl.ZIndex = 11
     keyLbl.Parent = panel
+    table.insert(translatableCards, {lbl = keyLbl, ru = "Клавиша рывка (ПК):", en = "Dash key (PC):"})
 
     local keyBtn = Instance.new("TextButton")
     keyBtn.Size = UDim2.new(0, 90, 0, 22)
     keyBtn.Position = UDim2.new(0, 0, 0, 20)
-    keyBtn.BackgroundColor3 = THEME.BgCardAlt
+    keyBtn.BackgroundColor3 = Color3.fromRGB(36, 22, 64)
     keyBtn.Text = "[" .. fakeDashKey.Name .. "]"
-    keyBtn.TextColor3 = THEME.AccentViolet
+    keyBtn.TextColor3 = Color3.fromRGB(215, 175, 255)
     keyBtn.TextSize = 10
     keyBtn.Font = Enum.Font.GothamBold
     keyBtn.ZIndex = 11
     keyBtn.Parent = panel
-    Instance.new("UICorner", keyBtn).CornerRadius = UDim.new(0, 6)
+    local kbC = Instance.new("UICorner") kbC.CornerRadius = UDim.new(0, 6) kbC.Parent = keyBtn
 
     local listeningForKey = false
     keyBtn.MouseButton1Click:Connect(function()
         playClickSound()
         listeningForKey = true
-        keyBtn.Text = "[Жми...]"
-        keyBtn.TextColor3 = THEME.TextBright
+        keyBtn.Text = tr("[Жми...]", "[Press...]")
+        keyBtn.TextColor3 = Color3.fromRGB(165, 95, 255)
     end)
 
     UserInputService.InputBegan:Connect(function(input, gameProcessed)
@@ -1459,34 +1533,34 @@ end, true, function(panel)
             listeningForKey = false
             fakeDashKey = input.KeyCode
             keyBtn.Text = "[" .. fakeDashKey.Name .. "]"
-            keyBtn.TextColor3 = THEME.AccentViolet
+            keyBtn.TextColor3 = Color3.fromRGB(215, 175, 255)
         end
     end)
 
     local mobBtnToggle = Instance.new("TextButton")
     mobBtnToggle.Size = UDim2.new(0, 180, 0, 26)
     mobBtnToggle.Position = UDim2.new(0, 0, 0, 48)
-    mobBtnToggle.BackgroundColor3 = THEME.BgCardAlt
+    mobBtnToggle.BackgroundColor3 = Color3.fromRGB(36, 22, 64)
     mobBtnToggle.Text = "Кнопка (телефон): OFF"
-    mobBtnToggle.TextColor3 = THEME.TextMuted
+    mobBtnToggle.TextColor3 = Color3.fromRGB(190, 165, 225)
     mobBtnToggle.TextSize = 9
     mobBtnToggle.Font = Enum.Font.GothamBold
     mobBtnToggle.ZIndex = 11
     mobBtnToggle.Parent = panel
-    Instance.new("UICorner", mobBtnToggle).CornerRadius = UDim.new(0, 6)
+    local mbtC = Instance.new("UICorner") mbtC.CornerRadius = UDim.new(0, 6) mbtC.Parent = mobBtnToggle
 
     mobBtnToggle.MouseButton1Click:Connect(function()
         playClickSound()
         fakeDashMobileBtnEnabled = not fakeDashMobileBtnEnabled
         if fakeDashMobileBtnEnabled then
-            mobBtnToggle.Text = "Кнопка (телефон): ON"
-            mobBtnToggle.TextColor3 = THEME.TextBright
-            mobBtnToggle.BackgroundColor3 = THEME.AccentPurple
+            mobBtnToggle.Text = tr("Кнопка (телефон): ON", "Mobile button: ON")
+            mobBtnToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+            mobBtnToggle.BackgroundColor3 = Color3.fromRGB(130, 58, 235)
             if fakeDashEnabled then mobileDashBtn.Visible = true end
         else
-            mobBtnToggle.Text = "Кнопка (телефон): OFF"
-            mobBtnToggle.TextColor3 = THEME.TextMuted
-            mobBtnToggle.BackgroundColor3 = THEME.BgCardAlt
+            mobBtnToggle.Text = tr("Кнопка (телефон): OFF", "Mobile button: OFF")
+            mobBtnToggle.TextColor3 = Color3.fromRGB(190, 165, 225)
+            mobBtnToggle.BackgroundColor3 = Color3.fromRGB(36, 22, 64)
             mobileDashBtn.Visible = false
         end
     end)
@@ -1502,6 +1576,7 @@ performFakeDash = function()
     if not root or not humanoid then return end
 
     isDashing = true
+    playClickSound()
 
     local animator = humanoid:FindFirstChildOfClass("Animator")
     if animator then
@@ -1535,7 +1610,7 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 end)
 
 -- Visuals
-createModuleCard(visualsPage, "Fullbright", "Максимально светлое освещение карты", "Максимально светлое освещение карты", function(state)
+createModuleCard(visualsPage, "Fullbright", "Максимально светлое освещение карты", "Bright map lighting", function(state)
     fullbrightEnabled = state
     if fullbrightEnabled then
         Lighting.Brightness = 2
@@ -1552,7 +1627,7 @@ createModuleCard(visualsPage, "Fullbright", "Максимально светло
 end, false)
 
 local setScriptVisualsUIFunc
-_, setScriptVisualsUIFunc = createModuleCard(visualsPage, "Script Visuals", "Падающие стикеры в меню", "Падающие стикеры в меню", function(state)
+_, setScriptVisualsUIFunc = createModuleCard(visualsPage, "Script Visuals", "Падающие стикеры в меню", "Falling stickers in menu", function(state)
     scriptVisualsEnabled = state
 end, true, function(panel)
     local lbl = Instance.new("TextLabel")
@@ -1560,17 +1635,18 @@ end, true, function(panel)
     lbl.BackgroundTransparency = 1
     lbl.Font = Enum.Font.GothamBold
     lbl.Text = "Выберите стиль меню:"
-    lbl.TextColor3 = THEME.TextBright
+    lbl.TextColor3 = Color3.fromRGB(235, 215, 255)
     lbl.TextSize = 11
     lbl.TextXAlignment = Enum.TextXAlignment.Left
     lbl.ZIndex = 11
     lbl.Parent = panel
+    table.insert(translatableCards, {lbl = lbl, ru = "Выберите стиль меню:", en = "Select menu style:"})
 
-    local btn1 = Instance.new("TextButton") btn1.Size = UDim2.new(0, 32, 0, 24) btn1.Position = UDim2.new(0, 0, 0, 22) btn1.BackgroundColor3 = THEME.AccentPurple btn1.Text = "🌸" btn1.TextColor3 = THEME.TextBright btn1.TextSize = 12 btn1.Font = Enum.Font.GothamBold btn1.ZIndex = 11 btn1.Parent = panel Instance.new("UICorner", btn1).CornerRadius = UDim.new(0, 6)
-    local btn2 = Instance.new("TextButton") btn2.Size = UDim2.new(0, 32, 0, 24) btn2.Position = UDim2.new(0, 36, 0, 22) btn2.BackgroundColor3 = THEME.BgCardAlt btn2.Text = "❤️" btn2.TextColor3 = THEME.TextMuted btn2.TextSize = 12 btn2.Font = Enum.Font.GothamBold btn2.ZIndex = 11 btn2.Parent = panel Instance.new("UICorner", btn2).CornerRadius = UDim.new(0, 6)
-    local btn3 = Instance.new("TextButton") btn3.Size = UDim2.new(0, 32, 0, 24) btn3.Position = UDim2.new(0, 72, 0, 22) btn3.BackgroundColor3 = THEME.BgCardAlt btn3.Text = "⭐" btn3.TextColor3 = THEME.TextMuted btn3.TextSize = 12 btn3.Font = Enum.Font.GothamBold btn3.ZIndex = 11 btn3.Parent = panel Instance.new("UICorner", btn3).CornerRadius = UDim.new(0, 6)
-    local btn4 = Instance.new("TextButton") btn4.Size = UDim2.new(0, 38, 0, 24) btn4.Position = UDim2.new(0, 108, 0, 22) btn4.BackgroundColor3 = THEME.BgCardAlt btn4.Text = "🍃" btn4.TextColor3 = THEME.TextMuted btn4.TextSize = 12 btn4.Font = Enum.Font.GothamBold btn4.ZIndex = 11 btn4.Parent = panel Instance.new("UICorner", btn4).CornerRadius = UDim.new(0, 6)
-    local btn5 = Instance.new("TextButton") btn5.Size = UDim2.new(0, 38, 0, 24) btn5.Position = UDim2.new(0, 150, 0, 22) btn5.BackgroundColor3 = THEME.BgCardAlt btn5.Text = "❄️" btn5.TextColor3 = THEME.TextMuted btn5.TextSize = 12 btn5.Font = Enum.Font.GothamBold btn5.ZIndex = 11 btn5.Parent = panel Instance.new("UICorner", btn5).CornerRadius = UDim.new(0, 6)
+    local btn1 = Instance.new("TextButton") btn1.Size = UDim2.new(0, 32, 0, 24) btn1.Position = UDim2.new(0, 0, 0, 22) btn1.BackgroundColor3 = Color3.fromRGB(130, 58, 235) btn1.Text = "🌸" btn1.TextColor3 = Color3.fromRGB(255, 255, 255) btn1.TextSize = 12 btn1.Font = Enum.Font.GothamBold btn1.ZIndex = 11 btn1.Parent = panel local c1 = Instance.new("UICorner") c1.CornerRadius = UDim.new(0, 6) c1.Parent = btn1
+    local btn2 = Instance.new("TextButton") btn2.Size = UDim2.new(0, 32, 0, 24) btn2.Position = UDim2.new(0, 36, 0, 22) btn2.BackgroundColor3 = Color3.fromRGB(36, 22, 64) btn2.Text = "❤️" btn2.TextColor3 = Color3.fromRGB(190, 165, 225) btn2.TextSize = 12 btn2.Font = Enum.Font.GothamBold btn2.ZIndex = 11 btn2.Parent = panel local c2 = Instance.new("UICorner") c2.CornerRadius = UDim.new(0, 6) c2.Parent = btn2
+    local btn3 = Instance.new("TextButton") btn3.Size = UDim2.new(0, 32, 0, 24) btn3.Position = UDim2.new(0, 72, 0, 22) btn3.BackgroundColor3 = Color3.fromRGB(36, 22, 64) btn3.Text = "⭐" btn3.TextColor3 = Color3.fromRGB(190, 165, 225) btn3.TextSize = 12 btn3.Font = Enum.Font.GothamBold btn3.ZIndex = 11 btn3.Parent = panel local c3 = Instance.new("UICorner") c3.CornerRadius = UDim.new(0, 6) c3.Parent = btn3
+    local btn4 = Instance.new("TextButton") btn4.Size = UDim2.new(0, 38, 0, 24) btn4.Position = UDim2.new(0, 108, 0, 22) btn4.BackgroundColor3 = Color3.fromRGB(36, 22, 64) btn4.Text = "🍃" btn4.TextColor3 = Color3.fromRGB(190, 165, 225) btn4.TextSize = 12 btn4.Font = Enum.Font.GothamBold btn4.ZIndex = 11 btn4.Parent = panel local c4 = Instance.new("UICorner") c4.CornerRadius = UDim.new(0, 6) c4.Parent = btn4
+    local btn5 = Instance.new("TextButton") btn5.Size = UDim2.new(0, 38, 0, 24) btn5.Position = UDim2.new(0, 150, 0, 22) btn5.BackgroundColor3 = Color3.fromRGB(36, 22, 64) btn5.Text = "❄️" btn5.TextColor3 = Color3.fromRGB(190, 165, 225) btn5.TextSize = 12 btn5.Font = Enum.Font.GothamBold btn5.ZIndex = 11 btn5.Parent = panel local c5 = Instance.new("UICorner") c5.CornerRadius = UDim.new(0, 6) c5.Parent = btn5
 
     local function updateParticleButtons(pType)
         playClickSound()
@@ -1578,8 +1654,8 @@ end, true, function(panel)
         local buttons = { {btn1, "🌸"}, {btn2, "❤️"}, {btn3, "⭐"}, {btn4, "🍃"}, {btn5, "❄️"} }
         for _, pair in ipairs(buttons) do
             local active = (pair[2] == pType)
-            pair[1].BackgroundColor3 = active and THEME.AccentPurple or THEME.BgCardAlt
-            pair[1].TextColor3 = active and THEME.TextBright or THEME.TextMuted
+            pair[1].BackgroundColor3 = active and Color3.fromRGB(130, 58, 235) or Color3.fromRGB(36, 22, 64)
+            pair[1].TextColor3 = active and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(190, 165, 225)
         end
     end
 
@@ -1592,7 +1668,7 @@ end)
 setScriptVisualsUIState = setScriptVisualsUIFunc
 
 local setWorldVisualsUIFunc
-_, setWorldVisualsUIFunc = createModuleCard(visualsPage, "World Visual", "Стикеры падают вокруг вас в мире", "Стикеры падают вокруг вас в мире", function(state)
+_, setWorldVisualsUIFunc = createModuleCard(visualsPage, "World Visual", "Стикеры падают вокруг вас в мире", "Falling stickers around you in world", function(state)
     worldVisualsEnabled = state
 end, true, function(panel)
     local lbl = Instance.new("TextLabel")
@@ -1600,17 +1676,18 @@ end, true, function(panel)
     lbl.BackgroundTransparency = 1
     lbl.Font = Enum.Font.GothamBold
     lbl.Text = "Выберите стиль мира:"
-    lbl.TextColor3 = THEME.TextBright
+    lbl.TextColor3 = Color3.fromRGB(235, 215, 255)
     lbl.TextSize = 11
     lbl.TextXAlignment = Enum.TextXAlignment.Left
     lbl.ZIndex = 11
     lbl.Parent = panel
+    table.insert(translatableCards, {lbl = lbl, ru = "Выберите стиль мира:", en = "Select world style:"})
 
-    local wbtn1 = Instance.new("TextButton") wbtn1.Size = UDim2.new(0, 32, 0, 22) wbtn1.Position = UDim2.new(0, 0, 0, 20) wbtn1.BackgroundColor3 = THEME.AccentPurple wbtn1.Text = "🌸" wbtn1.TextColor3 = THEME.TextBright wbtn1.TextSize = 11 wbtn1.Font = Enum.Font.GothamBold wbtn1.ZIndex = 11 wbtn1.Parent = panel Instance.new("UICorner", wbtn1).CornerRadius = UDim.new(0, 6)
-    local wbtn2 = Instance.new("TextButton") wbtn2.Size = UDim2.new(0, 32, 0, 22) wbtn2.Position = UDim2.new(0, 36, 0, 20) wbtn2.BackgroundColor3 = THEME.BgCardAlt wbtn2.Text = "❤️" wbtn2.TextColor3 = THEME.TextMuted wbtn2.TextSize = 11 wbtn2.Font = Enum.Font.GothamBold wbtn2.ZIndex = 11 wbtn2.Parent = panel Instance.new("UICorner", wbtn2).CornerRadius = UDim.new(0, 6)
-    local wbtn3 = Instance.new("TextButton") wbtn3.Size = UDim2.new(0, 32, 0, 22) wbtn3.Position = UDim2.new(0, 72, 0, 20) wbtn3.BackgroundColor3 = THEME.BgCardAlt wbtn3.Text = "⭐" wbtn3.TextColor3 = THEME.TextMuted wbtn3.TextSize = 11 wbtn3.Font = Enum.Font.GothamBold wbtn3.ZIndex = 11 wbtn3.Parent = panel Instance.new("UICorner", wbtn3).CornerRadius = UDim.new(0, 6)
-    local wbtn4 = Instance.new("TextButton") wbtn4.Size = UDim2.new(0, 38, 0, 22) wbtn4.Position = UDim2.new(0, 108, 0, 20) wbtn4.BackgroundColor3 = THEME.BgCardAlt wbtn4.Text = "🍃" wbtn4.TextColor3 = THEME.TextMuted wbtn4.TextSize = 11 wbtn4.Font = Enum.Font.GothamBold wbtn4.ZIndex = 11 wbtn4.Parent = panel Instance.new("UICorner", wbtn4).CornerRadius = UDim.new(0, 6)
-    local wbtn5 = Instance.new("TextButton") wbtn5.Size = UDim2.new(0, 38, 0, 22) wbtn5.Position = UDim2.new(0, 150, 0, 20) wbtn5.BackgroundColor3 = THEME.BgCardAlt wbtn5.Text = "❄️" wbtn5.TextColor3 = THEME.TextMuted wbtn5.TextSize = 11 wbtn5.Font = Enum.Font.GothamBold wbtn5.ZIndex = 11 wbtn5.Parent = panel Instance.new("UICorner", wbtn5).CornerRadius = UDim.new(0, 6)
+    local wbtn1 = Instance.new("TextButton") wbtn1.Size = UDim2.new(0, 32, 0, 22) wbtn1.Position = UDim2.new(0, 0, 0, 20) wbtn1.BackgroundColor3 = Color3.fromRGB(130, 58, 235) wbtn1.Text = "🌸" wbtn1.TextColor3 = Color3.fromRGB(255, 255, 255) wbtn1.TextSize = 11 wbtn1.Font = Enum.Font.GothamBold wbtn1.ZIndex = 11 wbtn1.Parent = panel local wc1 = Instance.new("UICorner") wc1.CornerRadius = UDim.new(0, 6) wc1.Parent = wbtn1
+    local wbtn2 = Instance.new("TextButton") wbtn2.Size = UDim2.new(0, 32, 0, 22) wbtn2.Position = UDim2.new(0, 36, 0, 20) wbtn2.BackgroundColor3 = Color3.fromRGB(36, 22, 64) wbtn2.Text = "❤️" wbtn2.TextColor3 = Color3.fromRGB(190, 165, 225) wbtn2.TextSize = 11 wbtn2.Font = Enum.Font.GothamBold wbtn2.ZIndex = 11 wbtn2.Parent = panel local wc2 = Instance.new("UICorner") wc2.CornerRadius = UDim.new(0, 6) wc2.Parent = wbtn2
+    local wbtn3 = Instance.new("TextButton") wbtn3.Size = UDim2.new(0, 32, 0, 22) wbtn3.Position = UDim2.new(0, 72, 0, 20) wbtn3.BackgroundColor3 = Color3.fromRGB(36, 22, 64) wbtn3.Text = "⭐" wbtn3.TextColor3 = Color3.fromRGB(190, 165, 225) wbtn3.TextSize = 11 wbtn3.Font = Enum.Font.GothamBold wbtn3.ZIndex = 11 wbtn3.Parent = panel local wc3 = Instance.new("UICorner") wc3.CornerRadius = UDim.new(0, 6) wc3.Parent = wbtn3
+    local wbtn4 = Instance.new("TextButton") wbtn4.Size = UDim2.new(0, 38, 0, 22) wbtn4.Position = UDim2.new(0, 108, 0, 20) wbtn4.BackgroundColor3 = Color3.fromRGB(36, 22, 64) wbtn4.Text = "🍃" wbtn4.TextColor3 = Color3.fromRGB(190, 165, 225) wbtn4.TextSize = 11 wbtn4.Font = Enum.Font.GothamBold wbtn4.ZIndex = 11 wbtn4.Parent = panel local wc4 = Instance.new("UICorner") wc4.CornerRadius = UDim.new(0, 6) wc4.Parent = wbtn4
+    local wbtn5 = Instance.new("TextButton") wbtn5.Size = UDim2.new(0, 38, 0, 22) wbtn5.Position = UDim2.new(0, 150, 0, 20) wbtn5.BackgroundColor3 = Color3.fromRGB(36, 22, 64) wbtn5.Text = "❄️" wbtn5.TextColor3 = Color3.fromRGB(190, 165, 225) wbtn5.TextSize = 11 wbtn5.Font = Enum.Font.GothamBold wbtn5.ZIndex = 11 wbtn5.Parent = panel local wc5 = Instance.new("UICorner") wc5.CornerRadius = UDim.new(0, 6) wc5.Parent = wbtn5
 
     local function updateWorldParticleButtons(pType)
         playClickSound()
@@ -1618,8 +1695,8 @@ end, true, function(panel)
         local buttons = { {wbtn1, "🌸"}, {wbtn2, "❤️"}, {wbtn3, "⭐"}, {wbtn4, "🍃"}, {wbtn5, "❄️"} }
         for _, pair in ipairs(buttons) do
             local active = (pair[2] == pType)
-            pair[1].BackgroundColor3 = active and THEME.AccentPurple or THEME.BgCardAlt
-            pair[1].TextColor3 = active and THEME.TextBright or THEME.TextMuted
+            pair[1].BackgroundColor3 = active and Color3.fromRGB(130, 58, 235) or Color3.fromRGB(36, 22, 64)
+            pair[1].TextColor3 = active and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(190, 165, 225)
         end
     end
 
@@ -1635,28 +1712,29 @@ end, true, function(panel)
     speedLbl.BackgroundTransparency = 1
     speedLbl.Font = Enum.Font.GothamBold
     speedLbl.Text = "Скорость падения:"
-    speedLbl.TextColor3 = THEME.TextBright
+    speedLbl.TextColor3 = Color3.fromRGB(235, 215, 255)
     speedLbl.TextSize = 9
     speedLbl.TextXAlignment = Enum.TextXAlignment.Left
     speedLbl.ZIndex = 11
     speedLbl.Parent = panel
+    table.insert(translatableCards, {lbl = speedLbl, ru = "Скорость падения:", en = "Fall speed:"})
 
     local sliderBg = Instance.new("Frame")
     sliderBg.Size = UDim2.new(0, 180, 0, 6)
     sliderBg.Position = UDim2.new(0, 5, 0, 70)
-    sliderBg.BackgroundColor3 = THEME.BgDark
+    sliderBg.BackgroundColor3 = Color3.fromRGB(36, 22, 64)
     sliderBg.BorderSizePixel = 0
     sliderBg.ZIndex = 11
     sliderBg.Parent = panel
-    Instance.new("UICorner", sliderBg).CornerRadius = UDim.new(1, 0)
+    local sBgCorner = Instance.new("UICorner") sBgCorner.CornerRadius = UDim.new(1, 0) sBgCorner.Parent = sliderBg
 
     local sliderFill = Instance.new("Frame")
     sliderFill.Size = UDim2.new(0.5, 0, 1, 0)
-    sliderFill.BackgroundColor3 = THEME.AccentPurple
+    sliderFill.BackgroundColor3 = Color3.fromRGB(155, 75, 255)
     sliderFill.BorderSizePixel = 0
     sliderFill.ZIndex = 12
     sliderFill.Parent = sliderBg
-    Instance.new("UICorner", sliderFill).CornerRadius = UDim.new(1, 0)
+    local sFillCorner = Instance.new("UICorner") sFillCorner.CornerRadius = UDim.new(1, 0) sFillCorner.Parent = sliderFill
 
     local sliderBtn = Instance.new("TextButton")
     sliderBtn.Size = UDim2.new(1, 20, 1, 20)
@@ -1679,7 +1757,7 @@ end, true, function(panel)
 end)
 setWorldVisualsUIState = setWorldVisualsUIFunc
 
--- СИСТЕМА АУР И ПРЕДПРОСМОТРА (ТОЧНЫЕ PARTICLES + НЕОНОВАЯ РАМКА)
+-- СИСТЕМА АУР И ПРЕДПРОСМОТРА
 local activeAuraConnection = nil
 local activeAuraFolder = nil
 
@@ -2111,50 +2189,57 @@ local function buildAuraPreviewUI(panel)
     pickLbl.BackgroundTransparency = 1
     pickLbl.Font = Enum.Font.GothamBold
     pickLbl.Text = "Выберите ауру:"
-    pickLbl.TextColor3 = THEME.TextBright
+    pickLbl.TextColor3 = Color3.fromRGB(235, 215, 255)
     pickLbl.TextSize = 10
     pickLbl.TextXAlignment = Enum.TextXAlignment.Left
     pickLbl.ZIndex = 11
     pickLbl.Parent = panel
+    table.insert(translatableCards, {lbl = pickLbl, ru = "Выберите ауру:", en = "Select aura:"})
 
     local noobBtn = Instance.new("TextButton")
     noobBtn.Name = "NoobAuraButton"
     noobBtn.Size = UDim2.new(0, 92, 0, 22)
     noobBtn.Position = UDim2.new(0, 0, 0, 17)
-    noobBtn.BackgroundColor3 = THEME.AccentPurple
+    noobBtn.BackgroundColor3 = Color3.fromRGB(130, 58, 235)
     noobBtn.Text = "Нуб-аура"
-    noobBtn.TextColor3 = THEME.TextBright
+    noobBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
     noobBtn.TextSize = 10
     noobBtn.Font = Enum.Font.GothamBold
     noobBtn.ZIndex = 11
     noobBtn.Parent = panel
     Instance.new("UICorner", noobBtn).CornerRadius = UDim.new(0, 6)
+    table.insert(translatableCards, {lbl = noobBtn, ru = "Нуб-аура", en = "Noob aura"})
 
     local fireBtn = Instance.new("TextButton")
     fireBtn.Name = "FireAuraButton"
     fireBtn.Size = UDim2.new(0, 96, 0, 22)
     fireBtn.Position = UDim2.new(0, 98, 0, 17)
-    fireBtn.BackgroundColor3 = THEME.BgCardAlt
+    fireBtn.BackgroundColor3 = Color3.fromRGB(36, 22, 64)
     fireBtn.Text = "Огневая аура"
-    fireBtn.TextColor3 = THEME.TextMuted
+    fireBtn.TextColor3 = Color3.fromRGB(190, 165, 225)
     fireBtn.TextSize = 10
     fireBtn.Font = Enum.Font.GothamBold
     fireBtn.ZIndex = 11
     fireBtn.Parent = panel
     Instance.new("UICorner", fireBtn).CornerRadius = UDim.new(0, 6)
+    table.insert(translatableCards, {lbl = fireBtn, ru = "Огневая аура", en = "Fire aura"})
 
     local previewContainer = Instance.new("Frame")
     previewContainer.Name = "PreviewContainer"
     previewContainer.Size = UDim2.new(0, 195, 0, 142)
     previewContainer.Position = UDim2.new(0, 0, 0, 44)
-    previewContainer.BackgroundColor3 = THEME.BgPanel
-    previewContainer.BackgroundTransparency = 0.1
+    previewContainer.BackgroundColor3 = Color3.fromRGB(22, 13, 38)
+    previewContainer.BackgroundTransparency = 0.15
     previewContainer.BorderSizePixel = 0
     previewContainer.ClipsDescendants = true
     previewContainer.ZIndex = 11
     previewContainer.Parent = panel
     Instance.new("UICorner", previewContainer).CornerRadius = UDim.new(0, 8)
-    addStroke(previewContainer, THEME.StrokePurple, 1.1, 0.35)
+    local prevStroke = Instance.new("UIStroke")
+    prevStroke.Color = Color3.fromRGB(135, 65, 240)
+    prevStroke.Thickness = 1
+    prevStroke.Transparency = 0.45
+    prevStroke.Parent = previewContainer
 
     local prevTitle = Instance.new("TextLabel")
     prevTitle.Size = UDim2.new(1, -10, 0, 16)
@@ -2162,21 +2247,21 @@ local function buildAuraPreviewUI(panel)
     prevTitle.BackgroundTransparency = 1
     prevTitle.Font = Enum.Font.GothamBold
     prevTitle.Text = "Предпросмотр"
-    prevTitle.TextColor3 = THEME.TextBright
+    prevTitle.TextColor3 = Color3.fromRGB(235, 215, 255)
     prevTitle.TextSize = 10
     prevTitle.TextXAlignment = Enum.TextXAlignment.Left
     prevTitle.ZIndex = 12
     prevTitle.Parent = previewContainer
-    table.insert(translatableCards, {lbl = prevTitle, ru = "Предпросмотр", en = "Предпросмотр"})
+    table.insert(translatableCards, {lbl = prevTitle, ru = "Предпросмотр", en = "Preview"})
 
     local viewport = Instance.new("ViewportFrame")
     viewport.Name = "AuraViewport"
     viewport.Size = UDim2.new(1, -10, 1, -24)
     viewport.Position = UDim2.new(0, 5, 0, 19)
-    viewport.BackgroundColor3 = THEME.BgDark
+    viewport.BackgroundColor3 = Color3.fromRGB(15, 9, 26)
     viewport.BackgroundTransparency = 0.08
-    viewport.Ambient = Color3.fromRGB(205, 185, 235)
-    viewport.LightColor = Color3.fromRGB(255, 242, 255)
+    viewport.Ambient = Color3.fromRGB(200, 180, 230)
+    viewport.LightColor = Color3.fromRGB(255, 240, 255)
     viewport.LightDirection = Vector3.new(-0.5, -1, -0.5)
     viewport.ZIndex = 12
     viewport.Parent = previewContainer
@@ -2276,11 +2361,11 @@ local function buildAuraPreviewUI(panel)
     refreshAuraPreviewVisual = function()
         local isFire = selectedAuraMode == "Fire"
 
-        noobBtn.BackgroundColor3 = (not isFire) and THEME.AccentPurple or THEME.BgCardAlt
-        noobBtn.TextColor3 = (not isFire) and THEME.TextBright or THEME.TextMuted
+        noobBtn.BackgroundColor3 = (not isFire) and Color3.fromRGB(130, 58, 235) or Color3.fromRGB(36, 22, 64)
+        noobBtn.TextColor3 = (not isFire) and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(190, 165, 225)
 
-        fireBtn.BackgroundColor3 = isFire and THEME.AccentPurple or THEME.BgCardAlt
-        fireBtn.TextColor3 = isFire and THEME.TextBright or THEME.TextMuted
+        fireBtn.BackgroundColor3 = isFire and Color3.fromRGB(130, 58, 235) or Color3.fromRGB(36, 22, 64)
+        fireBtn.TextColor3 = isFire and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(190, 165, 225)
 
         buildPreviewAura()
 
@@ -2367,7 +2452,7 @@ end
 
 -- Модуль "Аура"
 local setAuraUIFunc
-_, setAuraUIFunc = createModuleCard(visualsPage, "Аура", "Эффекты вокруг персонажа", "Эффекты вокруг персонажа", function(state)
+_, setAuraUIFunc = createModuleCard(visualsPage, "Аура", "Эффекты вокруг персонажа", "Effects around character", function(state)
     auraEnabled = state
     if auraEnabled then
         if player.Character then applyActiveAura(player.Character) end
@@ -2434,7 +2519,7 @@ local function applyAngelWings(char)
         weld.Parent = anchor
 
         local softLight = Instance.new("PointLight")
-        softLight.Color = Color3.fromRGB(255, 248, 225)
+        softLight.Color = Color3.fromRGB(245, 235, 255)
         softLight.Brightness = 2.2
         softLight.Range = 10
         softLight.Parent = anchor
@@ -2549,7 +2634,7 @@ local function applyAngelWings(char)
 end
 
 local setWingsUIFunc
-_, setWingsUIFunc = createModuleCard(visualsPage, "Ангельские крылья", "Белоснежные крылья за спиной с взмахами", "Белоснежные крылья за спиной с взмахами", function(state)
+_, setWingsUIFunc = createModuleCard(visualsPage, "Ангельские крылья", "Белоснежные крылья за спиной с взмахами", "Snow-white flapping wings on back", function(state)
     angelWingsEnabled = state
     if angelWingsEnabled then
         if player.Character then applyAngelWings(player.Character) end
@@ -2579,20 +2664,21 @@ tpHeaderLbl.Position = UDim2.new(0, 0, 0, 0)
 tpHeaderLbl.BackgroundTransparency = 1
 tpHeaderLbl.Font = Enum.Font.GothamBold
 tpHeaderLbl.Text = "Тренировка / NPC:"
-tpHeaderLbl.TextColor3 = THEME.TextBright
+tpHeaderLbl.TextColor3 = Color3.fromRGB(235, 215, 255)
 tpHeaderLbl.TextSize = 11
 tpHeaderLbl.TextXAlignment = Enum.TextXAlignment.Left
 tpHeaderLbl.ZIndex = 3
 tpHeaderLbl.Parent = teleportPage
+table.insert(translatableCards, {lbl = tpHeaderLbl, ru = "Тренировка / NPC:", en = "Training / NPC:"})
 
 local dummyTpBtn = Instance.new("TextButton")
 dummyTpBtn.Size = UDim2.new(1, -10, 0, 32)
 dummyTpBtn.Position = UDim2.new(0, 0, 0, 22)
-dummyTpBtn.BackgroundColor3 = THEME.AccentPurple
+dummyTpBtn.BackgroundColor3 = Color3.fromRGB(130, 58, 235)
 dummyTpBtn.Text = ""
 dummyTpBtn.ZIndex = 3
 dummyTpBtn.Parent = teleportPage
-Instance.new("UICorner", dummyTpBtn).CornerRadius = UDim.new(0, 7)
+local dtbC = Instance.new("UICorner") dtbC.CornerRadius = UDim.new(0, 7) dtbC.Parent = dummyTpBtn
 
 local dummyTpIcon = Instance.new("ImageLabel")
 dummyTpIcon.Size = UDim2.new(0, 16, 0, 16)
@@ -2607,12 +2693,13 @@ dummyTpLbl.Size = UDim2.new(1, -34, 1, 0)
 dummyTpLbl.Position = UDim2.new(0, 32, 0, 0)
 dummyTpLbl.BackgroundTransparency = 1
 dummyTpLbl.Text = "ТП к Weakest Dummy"
-dummyTpLbl.TextColor3 = THEME.TextBright
+dummyTpLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
 dummyTpLbl.TextSize = 11
 dummyTpLbl.Font = Enum.Font.GothamBold
 dummyTpLbl.TextXAlignment = Enum.TextXAlignment.Left
 dummyTpLbl.ZIndex = 4
 dummyTpLbl.Parent = dummyTpBtn
+table.insert(translatableCards, {lbl = dummyTpLbl, ru = "ТП к Weakest Dummy", en = "TP to Weakest Dummy"})
 
 local function teleportToPosition(pos)
     pcall(function()
@@ -2620,20 +2707,21 @@ local function teleportToPosition(pos)
         local root = char and char:FindFirstChild("HumanoidRootPart")
         if root then
             root.CFrame = CFrame.new(pos + Vector3.new(0, 3, 2))
+            playSoundEffect(SOUND_TELEPORT_ID, 0.85, 1.0)
         end
     end)
 end
 
 dummyTpBtn.MouseButton1Click:Connect(function()
-    playClickSound()
     local liveFolder = Workspace:FindFirstChild("Live")
     local dummy = liveFolder and liveFolder:FindFirstChild("Weakest Dummy")
     local dRoot = dummy and (dummy:FindFirstChild("HumanoidRootPart") or dummy:FindFirstChild("Torso"))
     if dRoot then
         teleportToPosition(dRoot.Position)
-        showNotification("Teleport", "ТП к Weakest Dummy")
+        showNotification("Teleport", tr("ТП к Weakest Dummy", "TP to Weakest Dummy"))
     else
-        showNotification("Teleport", "Weakest Dummy не найден")
+        playSoundEffect(SOUND_ERROR_ID, 0.8, 1.0)
+        showNotification("Teleport", tr("Weakest Dummy не найден", "Weakest Dummy not found"))
     end
 end)
 
@@ -2643,11 +2731,12 @@ playersHeaderLbl.Position = UDim2.new(0, 0, 0, 62)
 playersHeaderLbl.BackgroundTransparency = 1
 playersHeaderLbl.Font = Enum.Font.GothamBold
 playersHeaderLbl.Text = "Игроки в сети (нажми для ТП):"
-playersHeaderLbl.TextColor3 = THEME.TextBright
+playersHeaderLbl.TextColor3 = Color3.fromRGB(235, 215, 255)
 playersHeaderLbl.TextSize = 11
 playersHeaderLbl.TextXAlignment = Enum.TextXAlignment.Left
 playersHeaderLbl.ZIndex = 3
 playersHeaderLbl.Parent = teleportPage
+table.insert(translatableCards, {lbl = playersHeaderLbl, ru = "Игроки в сети (нажми для ТП):", en = "Players online (click to TP):"})
 
 local tpPlayersList = Instance.new("Frame")
 tpPlayersList.Name = "TPPlayersList"
@@ -2667,19 +2756,17 @@ refreshTeleportList = function()
             local pBtn = Instance.new("TextButton")
             pBtn.Size = UDim2.new(1, 0, 0, 28)
             pBtn.Position = UDim2.new(0, 0, 0, yOff)
-            pBtn.BackgroundColor3 = THEME.BgCard
+            pBtn.BackgroundColor3 = Color3.fromRGB(28, 17, 52)
             pBtn.Text = ""
             pBtn.ZIndex = 4
             pBtn.Parent = tpPlayersList
-            Instance.new("UICorner", pBtn).CornerRadius = UDim.new(0, 7)
-            addStroke(pBtn, THEME.StrokeSoft, 1, 0.4)
+            local pbC = Instance.new("UICorner") pbC.CornerRadius = UDim.new(0, 7) pbC.Parent = pBtn
 
             local pIc = Instance.new("ImageLabel")
             pIc.Size = UDim2.new(0, 15, 0, 15)
             pIc.Position = UDim2.new(0, 10, 0.5, -7.5)
             pIc.BackgroundTransparency = 1
             pIc.Image = TELEPORT_ICON
-            pIc.ImageColor3 = THEME.AccentViolet
             pIc.ZIndex = 5
             pIc.Parent = pBtn
 
@@ -2688,7 +2775,7 @@ refreshTeleportList = function()
             pLbl.Position = UDim2.new(0, 32, 0, 0)
             pLbl.BackgroundTransparency = 1
             pLbl.Text = p.DisplayName .. " (@" .. p.Name .. ")"
-            pLbl.TextColor3 = THEME.TextBright
+            pLbl.TextColor3 = Color3.fromRGB(235, 215, 255)
             pLbl.TextSize = 10
             pLbl.Font = Enum.Font.GothamBold
             pLbl.TextXAlignment = Enum.TextXAlignment.Left
@@ -2696,14 +2783,14 @@ refreshTeleportList = function()
             pLbl.Parent = pBtn
 
             pBtn.MouseButton1Click:Connect(function()
-                playClickSound()
                 local tChar = p.Character
                 local tRoot = tChar and tChar:FindFirstChild("HumanoidRootPart")
                 if tRoot then
                     teleportToPosition(tRoot.Position)
-                    showNotification("Teleport", "ТП к " .. p.Name)
+                    showNotification("Teleport", tr("ТП к ", "TP to ") .. p.Name)
                 else
-                    showNotification("Teleport", "Игрок недоступен")
+                    playSoundEffect(SOUND_ERROR_ID, 0.8, 1.0)
+                    showNotification("Teleport", tr("Игрок недоступен", "Player unavailable"))
                 end
             end)
             yOff = yOff + 34
@@ -2768,24 +2855,41 @@ for i = 1, 20 do
     table.insert(scriptParticles, { lbl = lbl, x = math.random(), y = math.random(), speed = math.random(15, 40) / 100000, sway = math.random(1, 10) })
 end
 
-local bgWaveClock = 0
+-- КРАСИВАЯ ПЛАВНАЯ АНИМАЦИЯ ФОНОВЫХ ТОЧЕК И ВОЛНЫ
+local bgWaveTime = 0
 
 RunService.RenderStepped:Connect(function(dt)
     if not screenGui.Parent then return end
-    bgWaveClock += dt
+    bgWaveTime += dt
 
     if mainFrame.Visible then
-        local w = mainFrame.AbsoluteSize.X
-        local h = mainFrame.AbsoluteSize.Y
-        if w > 0 and h > 0 then
-            for _, d in ipairs(waveDots) do
-                local waveCenterY = h * 0.54
-                    + math.sin(d.u * math.pi * 2.4 - bgWaveClock * d.speed + d.phase) * 28
-                    + math.cos(d.u * math.pi * 4.5 + bgWaveClock * 0.9) * 10
-                local xPos = d.u * w + math.sin(bgWaveClock * 1.1 + d.phase) * d.driftX
-                local yPos = waveCenterY + d.bandOffset * h + math.cos(bgWaveClock * 1.6 + d.phase) * d.ampY
-                d.frame.Position = UDim2.new(0, xPos, 0, yPos)
+        local frameW = mainFrame.AbsoluteSize.X > 0 and mainFrame.AbsoluteSize.X or mainWidth
+        local frameH = mainFrame.AbsoluteSize.Y > 0 and mainFrame.AbsoluteSize.Y or mainHeight
+
+        nebulaGlowUpper.Position = UDim2.new(0.18, math.sin(bgWaveTime * 0.45) * 24, 0.16, math.cos(bgWaveTime * 0.6) * 14)
+        waveGlowRibbon.Position = UDim2.new(-0.18, math.sin(bgWaveTime * 0.85) * 22, 0.36, math.cos(bgWaveTime * 1.1) * 12)
+        waveGlowRibbon.Rotation = math.sin(bgWaveTime * 0.5) * 4.5
+
+        for _, d in ipairs(bgWaveDots) do
+            local waveOffset
+            if d.isRibbon then
+                local primaryWave = math.sin(bgWaveTime * (d.driftSpeed * 1.35) + d.phase * 1.15) * d.amp
+                local secondaryWave = math.cos(bgWaveTime * 0.75 + d.phase * 0.65) * (d.amp * 0.45)
+                waveOffset = primaryWave + secondaryWave
+            else
+                waveOffset = math.sin(bgWaveTime * d.driftSpeed + d.phase) * d.amp
+                    + math.cos(bgWaveTime * 0.45 + d.phase * 0.8) * (d.amp * 0.5)
             end
+
+            local driftX = math.sin(bgWaveTime * 0.65 + d.phase) * (d.isRibbon and 14 or 22)
+            local px = math.clamp(d.baseX * frameW + driftX, 4, frameW - 6)
+            local py = math.clamp(d.baseY * frameH + waveOffset, 4, frameH - 6)
+            d.frame.Position = UDim2.new(0, px, 0, py)
+
+            local pulse = (math.sin(bgWaveTime * 3.1 + d.phase) + 1) * 0.5
+            local sz = d.baseSize * (0.7 + pulse * 0.6)
+            d.frame.Size = UDim2.new(0, sz, 0, sz)
+            d.frame.BackgroundTransparency = d.isRibbon and (0.52 - pulse * 0.44) or (0.68 - pulse * 0.38)
         end
     end
 
@@ -2845,52 +2949,64 @@ langLbl.Position = UDim2.new(0, 0, 0, 10)
 langLbl.BackgroundTransparency = 1
 langLbl.Font = Enum.Font.GothamBold
 langLbl.Text = "Выберите язык:"
-langLbl.TextColor3 = THEME.TextBright
+langLbl.TextColor3 = Color3.fromRGB(235, 215, 255)
 langLbl.TextSize = 12
 langLbl.TextXAlignment = Enum.TextXAlignment.Left
 langLbl.ZIndex = 3
 langLbl.Parent = languagePage
+table.insert(translatableCards, {lbl = langLbl, ru = "Выберите язык:", en = "Select language:"})
 
 local ruBtn = Instance.new("TextButton")
 ruBtn.Size = UDim2.new(0, 110, 0, 32)
 ruBtn.Position = UDim2.new(0, 0, 0, 42)
-ruBtn.BackgroundColor3 = THEME.AccentPurple
+ruBtn.BackgroundColor3 = Color3.fromRGB(130, 58, 235)
 ruBtn.Text = "🇷🇺 Русский"
-ruBtn.TextColor3 = THEME.TextBright
+ruBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 ruBtn.TextSize = 11
 ruBtn.Font = Enum.Font.GothamBold
 ruBtn.ZIndex = 3
 ruBtn.Parent = languagePage
-Instance.new("UICorner", ruBtn).CornerRadius = UDim.new(0, 7)
+local rbC = Instance.new("UICorner") rbC.CornerRadius = UDim.new(0, 7) rbC.Parent = ruBtn
 
 local enBtn = Instance.new("TextButton")
 enBtn.Size = UDim2.new(0, 110, 0, 32)
 enBtn.Position = UDim2.new(0, 120, 0, 42)
-enBtn.BackgroundColor3 = THEME.BgCard
-enBtn.Text = "🇬🇧 Русский (RU)"
-enBtn.TextColor3 = THEME.TextMuted
+enBtn.BackgroundColor3 = Color3.fromRGB(36, 22, 64)
+enBtn.Text = "🇬🇧 English"
+enBtn.TextColor3 = Color3.fromRGB(190, 165, 225)
 enBtn.TextSize = 11
 enBtn.Font = Enum.Font.GothamBold
 enBtn.ZIndex = 3
 enBtn.Parent = languagePage
-Instance.new("UICorner", enBtn).CornerRadius = UDim.new(0, 7)
+local ebC = Instance.new("UICorner") ebC.CornerRadius = UDim.new(0, 7) ebC.Parent = enBtn
+
+local function applyLanguageSelection(langCode)
+    currentLanguage = langCode
+    if langCode == "EN" then
+        enBtn.BackgroundColor3 = Color3.fromRGB(130, 58, 235)
+        enBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        ruBtn.BackgroundColor3 = Color3.fromRGB(36, 22, 64)
+        ruBtn.TextColor3 = Color3.fromRGB(190, 165, 225)
+        updateAllTranslations()
+        showNotification("Language", "English enabled")
+    else
+        ruBtn.BackgroundColor3 = Color3.fromRGB(130, 58, 235)
+        ruBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        enBtn.BackgroundColor3 = Color3.fromRGB(36, 22, 64)
+        enBtn.TextColor3 = Color3.fromRGB(190, 165, 225)
+        updateAllTranslations()
+        showNotification("Язык", "Установлен русский язык")
+    end
+end
 
 ruBtn.MouseButton1Click:Connect(function()
     playClickSound()
-    currentLanguage = "RU"
-    ruBtn.BackgroundColor3 = THEME.AccentPurple ruBtn.TextColor3 = THEME.TextBright
-    enBtn.BackgroundColor3 = THEME.BgCard enBtn.TextColor3 = THEME.TextMuted
-    updateAllTranslations()
-    showNotification("Язык", "Установлен русский язык")
+    applyLanguageSelection("RU")
 end)
 
 enBtn.MouseButton1Click:Connect(function()
     playClickSound()
-    currentLanguage = "RU"
-    enBtn.BackgroundColor3 = THEME.AccentPurple enBtn.TextColor3 = THEME.TextBright
-    ruBtn.BackgroundColor3 = THEME.BgCard ruBtn.TextColor3 = THEME.TextMuted
-    updateAllTranslations()
-    showNotification("Язык", "Установлен русский язык")
+    applyLanguageSelection("EN")
 end)
 
 -- МЕНЕДЖЕР КОНФИГОВ
@@ -2899,32 +3015,33 @@ local configsFolder = "ZelixHubConfigs"
 local configNameBox = Instance.new("TextBox")
 configNameBox.Size = UDim2.new(0, 140, 0, 28)
 configNameBox.Position = UDim2.new(0, 0, 0, 10)
-configNameBox.BackgroundColor3 = THEME.BgPanel
-configNameBox.BackgroundTransparency = 0.15
+configNameBox.BackgroundColor3 = Color3.fromRGB(28, 17, 52)
+configNameBox.BackgroundTransparency = 0.25
 configNameBox.PlaceholderText = "Имя конфига..."
-configNameBox.PlaceholderColor3 = THEME.TextMuted
+configNameBox.PlaceholderColor3 = Color3.fromRGB(145, 115, 190)
 configNameBox.Text = ""
-configNameBox.TextColor3 = THEME.TextBright
+configNameBox.TextColor3 = Color3.fromRGB(242, 226, 255)
 configNameBox.TextSize = 11
 configNameBox.Font = Enum.Font.Gotham
 configNameBox.ZIndex = 3
 configNameBox.Parent = configPage
+table.insert(translatableCards, {lbl = configNameBox, ru = "Имя конфига...", en = "Config name..."})
 
-Instance.new("UICorner", configNameBox).CornerRadius = UDim.new(0, 7)
-addStroke(configNameBox, THEME.StrokeSoft, 1, 0.35)
+local cnCorner = Instance.new("UICorner") cnCorner.CornerRadius = UDim.new(0, 7) cnCorner.Parent = configNameBox
 
 local createCfgBtn = Instance.new("TextButton")
-createCfgBtn.Size = UDim2.new(0, 82, 0, 28)
-createCfgBtn.Position = UDim2.new(0, 148, 0, 10)
-createCfgBtn.BackgroundColor3 = THEME.AccentPurple
+createCfgBtn.Size = UDim2.new(0, 75, 0, 28)
+createCfgBtn.Position = UDim2.new(0, 145, 0, 10)
+createCfgBtn.BackgroundColor3 = Color3.fromRGB(130, 58, 235)
 createCfgBtn.Text = "OK / Создать"
-createCfgBtn.TextColor3 = THEME.TextBright
+createCfgBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 createCfgBtn.TextSize = 10
 createCfgBtn.Font = Enum.Font.GothamBold
 createCfgBtn.ZIndex = 3
 createCfgBtn.Parent = configPage
+table.insert(translatableCards, {lbl = createCfgBtn, ru = "OK / Создать", en = "OK / Create"})
 
-Instance.new("UICorner", createCfgBtn).CornerRadius = UDim.new(0, 7)
+local ccCorner = Instance.new("UICorner") ccCorner.CornerRadius = UDim.new(0, 7) ccCorner.Parent = createCfgBtn
 
 local configListContainer = Instance.new("ScrollingFrame")
 configListContainer.Name = "ConfigListContainer"
@@ -2933,7 +3050,6 @@ configListContainer.Position = UDim2.new(0, 0, 0, 50)
 configListContainer.BackgroundTransparency = 1
 configListContainer.BorderSizePixel = 0
 configListContainer.ScrollBarThickness = 3
-configListContainer.ScrollBarImageColor3 = THEME.AccentPurple
 configListContainer.ZIndex = 2
 configListContainer.Parent = configPage
 
@@ -2949,29 +3065,28 @@ local function refreshConfigList()
         local itemFrame = Instance.new("Frame")
         itemFrame.Size = UDim2.new(1, -5, 0, 36)
         itemFrame.Position = UDim2.new(0, 0, 0, yOffset)
-        itemFrame.BackgroundColor3 = THEME.BgCard
-        itemFrame.BackgroundTransparency = 0.15
+        itemFrame.BackgroundColor3 = Color3.fromRGB(28, 17, 52)
+        itemFrame.BackgroundTransparency = 0.25
         itemFrame.ZIndex = 3
         itemFrame.Parent = configListContainer
 
-        Instance.new("UICorner", itemFrame).CornerRadius = UDim.new(0, 7)
-        addStroke(itemFrame, THEME.StrokeSoft, 1, 0.4)
+        local itCorner = Instance.new("UICorner") itCorner.CornerRadius = UDim.new(0, 7) itCorner.Parent = itemFrame
 
         local lbl = Instance.new("TextLabel")
         lbl.Size = UDim2.new(0, 130, 1, 0)
         lbl.Position = UDim2.new(0, 10, 0, 0)
         lbl.BackgroundTransparency = 1
         lbl.Text = cfgName
-        lbl.TextColor3 = THEME.TextBright
+        lbl.TextColor3 = Color3.fromRGB(238, 215, 255)
         lbl.TextSize = 11
         lbl.Font = Enum.Font.GothamBold
         lbl.TextXAlignment = Enum.TextXAlignment.Left
         lbl.ZIndex = 4
         lbl.Parent = itemFrame
 
-        local saveBtn = Instance.new("ImageButton") saveBtn.Size = UDim2.new(0, 24, 0, 24) saveBtn.Position = UDim2.new(1, -100, 0, 6) saveBtn.BackgroundTransparency = 1 saveBtn.Image = SAVE_ICON saveBtn.ImageColor3 = THEME.AccentGreen saveBtn.ZIndex = 4 saveBtn.Parent = itemFrame
-        local loadBtn = Instance.new("ImageButton") loadBtn.Size = UDim2.new(0, 24, 0, 24) loadBtn.Position = UDim2.new(1, -66, 0, 6) loadBtn.BackgroundTransparency = 1 loadBtn.Image = IMPORT_ICON loadBtn.ImageColor3 = THEME.AccentViolet saveBtn.ZIndex = 4 loadBtn.Parent = itemFrame
-        local delBtn = Instance.new("ImageButton") delBtn.Size = UDim2.new(0, 24, 0, 24) delBtn.Position = UDim2.new(1, -32, 0, 6) delBtn.BackgroundTransparency = 1 delBtn.Image = DELETE_ICON delBtn.ImageColor3 = THEME.DangerRed delBtn.ZIndex = 4 delBtn.Parent = itemFrame
+        local saveBtn = Instance.new("ImageButton") saveBtn.Size = UDim2.new(0, 24, 0, 24) saveBtn.Position = UDim2.new(1, -100, 0, 6) saveBtn.BackgroundTransparency = 1 saveBtn.Image = SAVE_ICON saveBtn.ImageColor3 = Color3.fromRGB(215, 180, 255) saveBtn.ZIndex = 4 saveBtn.Parent = itemFrame
+        local loadBtn = Instance.new("ImageButton") loadBtn.Size = UDim2.new(0, 24, 0, 24) loadBtn.Position = UDim2.new(1, -66, 0, 6) loadBtn.BackgroundTransparency = 1 loadBtn.Image = IMPORT_ICON loadBtn.ImageColor3 = Color3.fromRGB(215, 180, 255) loadBtn.ZIndex = 4 loadBtn.Parent = itemFrame
+        local delBtn = Instance.new("ImageButton") delBtn.Size = UDim2.new(0, 24, 0, 24) delBtn.Position = UDim2.new(1, -32, 0, 6) delBtn.BackgroundTransparency = 1 delBtn.Image = DELETE_ICON delBtn.ImageColor3 = Color3.fromRGB(255, 135, 175) delBtn.ZIndex = 4 delBtn.Parent = itemFrame
 
         saveBtn.MouseButton1Click:Connect(function()
             playClickSound()
@@ -2981,10 +3096,10 @@ local function refreshConfigList()
                 SpeedHack = speedHackEnabled, WalkSpeed = walkSpeedValue, FakeDashEnabled = fakeDashEnabled, FakeDashKeyName = fakeDashKey.Name,
                 FakeDashMobile = fakeDashMobileBtnEnabled, Fullbright = fullbrightEnabled, ScriptVisuals = scriptVisualsEnabled,
                 WorldVisuals = worldVisualsEnabled, AuraEnabled = auraEnabled, AuraMode = selectedAuraMode, AngelWings = angelWingsEnabled,
-                ParticleType = currentParticleType, WorldParticleType = worldParticleType, WorldSpeed = worldSpeedMultiplier, Language = "RU"
+                ParticleType = currentParticleType, WorldParticleType = worldParticleType, WorldSpeed = worldSpeedMultiplier, Language = currentLanguage
             }
             writefile(configsFolder .. "/" .. cfgName .. ".json", HttpService:JSONEncode(data))
-            showNotification("Конфиги", "Сохранено: " .. cfgName)
+            showNotification("Configs", tr("Сохранено: ", "Saved: ") .. cfgName)
         end)
 
         loadBtn.MouseButton1Click:Connect(function()
@@ -3014,19 +3129,18 @@ local function refreshConfigList()
                 currentParticleType = data.ParticleType or "🌸"
                 worldParticleType = data.WorldParticleType or "🌸"
                 worldSpeedMultiplier = data.WorldSpeed or 1.0
-                currentLanguage = "RU"
-                updateAllTranslations()
+                applyLanguageSelection(data.Language == "EN" and "EN" or "RU")
 
-                showNotification("Конфиги", "Загружено: " .. cfgName)
+                showNotification("Configs", tr("Загружено: ", "Loaded: ") .. cfgName)
             end)
         end)
 
         delBtn.MouseButton1Click:Connect(function()
-            playClickSound()
+            playDisableSound()
             if delfile then
                 delfile(configsFolder .. "/" .. cfgName .. ".json")
                 refreshConfigList()
-                showNotification("Конфиги", "Удалено: " .. cfgName)
+                showNotification("Configs", tr("Удалено: ", "Deleted: ") .. cfgName)
             end
         end)
 
@@ -3040,10 +3154,10 @@ createCfgBtn.MouseButton1Click:Connect(function()
     local name = configNameBox.Text
     if name and name ~= "" then
         if not isfolder(configsFolder) then makefolder(configsFolder) end
-        writefile(configsFolder .. "/" .. name .. ".json", HttpService:JSONEncode({ SelectedStyle = "", AutoFarm = false, SafeZoneOnHit = true, AimAssist = false, AimTarget = "Torso", AimSmoothness = 0.2, SpeedHack = false, WalkSpeed = 32, FakeDashEnabled = false, FakeDashKeyName = "Q", FakeDashMobile = false, Fullbright = false, ScriptVisuals = false, WorldVisuals = false, AuraEnabled = false, AuraMode = "Noob", AngelWings = false, ParticleType = "🌸", WorldParticleType = "🌸", WorldSpeed = 1.0, Language = "RU" }))
+        writefile(configsFolder .. "/" .. name .. ".json", HttpService:JSONEncode({ SelectedStyle = "", AutoFarm = false, SafeZoneOnHit = true, AimAssist = false, AimTarget = "Torso", AimSmoothness = 0.2, SpeedHack = false, WalkSpeed = 32, FakeDashEnabled = false, FakeDashKeyName = "Q", FakeDashMobile = false, Fullbright = false, ScriptVisuals = false, WorldVisuals = false, AuraEnabled = false, AuraMode = "Noob", AngelWings = false, ParticleType = "🌸", WorldParticleType = "🌸", WorldSpeed = 1.0, Language = currentLanguage }))
         configNameBox.Text = ""
         refreshConfigList()
-        showNotification("Конфиги", "Создан конфиг")
+        showNotification("Configs", tr("Создан конфиг", "Config created"))
     end
 end)
 
@@ -3191,7 +3305,7 @@ local function performNormalAttack(enemyChar)
     end)
 end
 
--- Постоянный спам обычных ударов при сближении с целью (не ждёт КД способностей)
+-- Постоянный спам обычных ударов при сближении с целью
 task.spawn(function()
     while true do
         task.wait(0.14)
@@ -3242,35 +3356,36 @@ task.spawn(function()
 end)
 
 enableDragging(mainFrame, topBarArea, function(newPos)
-    savedWindowPos = newPos
+    savedMainPos = newPos
 end)
 
--- КВАДРАТИК С ГЛАДКИМИ КОНЦАМИ И ТЕКСТУРОЙ 125033641674625 (СОХРАНЕНИЕ ПОЗИЦИИ)
-local savedFloatPos = UDim2.new(0.5, -26, 0.08, 0)
+-- СВЁРНУТЫЙ КВАДРАТИК БЕЗ ОБВОДКИ С ТЕКСТУРОЙ 125033641674625
+local squareSize = 52
+local savedSquarePos = UDim2.new(0.5, -squareSize / 2, 0.06, 0)
 
 local floatBtn = Instance.new("Frame")
-floatBtn.Name = "ZelixFloatSquare"
-floatBtn.Size = UDim2.new(0, 52, 0, 52)
-floatBtn.Position = savedFloatPos
-floatBtn.BackgroundColor3 = THEME.BgPanel
-floatBtn.BackgroundTransparency = 0.05
+floatBtn.Name = "ZelixMinimizedSquare"
+floatBtn.Size = UDim2.new(0, squareSize, 0, squareSize)
+floatBtn.Position = savedSquarePos
+floatBtn.BackgroundTransparency = 1
 floatBtn.BorderSizePixel = 0
+floatBtn.ClipsDescendants = true
 floatBtn.Visible = false
 floatBtn.ZIndex = 100
 floatBtn.Parent = screenGui
 
-Instance.new("UICorner", floatBtn).CornerRadius = UDim.new(0, 14)
-addStroke(floatBtn, THEME.AccentPurple, 1.6, 0.15)
-
 local floatTexture = Instance.new("ImageLabel")
-floatTexture.Size = UDim2.new(1, -8, 1, -8)
-floatTexture.Position = UDim2.new(0, 4, 0, 4)
+floatTexture.Size = UDim2.new(1, 0, 1, 0)
+floatTexture.Position = UDim2.new(0, 0, 0, 0)
 floatTexture.BackgroundTransparency = 1
-floatTexture.Image = FLOAT_SQUARE_TEXTURE_ID
-floatTexture.ScaleType = Enum.ScaleType.Fit
+floatTexture.Image = MINIMIZED_SQUARE_ID
+floatTexture.ScaleType = Enum.ScaleType.Stretch
 floatTexture.ZIndex = 101
 floatTexture.Parent = floatBtn
-Instance.new("UICorner", floatTexture).CornerRadius = UDim.new(0, 11)
+
+local floatTexCorner = Instance.new("UICorner")
+floatTexCorner.CornerRadius = UDim.new(0, 10)
+floatTexCorner.Parent = floatTexture
 
 local floatClick = Instance.new("TextButton")
 floatClick.Size = UDim2.new(1, 0, 1, 0)
@@ -3279,102 +3394,85 @@ floatClick.Text = ""
 floatClick.ZIndex = 102
 floatClick.Parent = floatBtn
 
-local floatDragStartPos = Vector2.new()
-local floatWasDragged = false
-
-floatClick.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        floatDragStartPos = Vector2.new(input.Position.X, input.Position.Y)
-        floatWasDragged = false
-    end
-end)
-
-UserInputService.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-        if (Vector2.new(input.Position.X, input.Position.Y) - floatDragStartPos).Magnitude > 6 then
-            floatWasDragged = true
-        end
-    end
-end)
-
+local wasSquareDragged = false
 enableDragging(floatBtn, floatClick, function(newPos)
-    savedFloatPos = newPos
+    savedSquarePos = newPos
+    wasSquareDragged = true
+end)
+
+floatClick.MouseButton1Down:Connect(function()
+    wasSquareDragged = false
 end)
 
 local function animateOpen()
     mainFrame.Visible = true
-    mainFrame.Size = UDim2.new(0, 640, 0, 410)
-    mainFrame.Position = UDim2.new(savedWindowPos.X.Scale, savedWindowPos.X.Offset, savedWindowPos.Y.Scale, savedWindowPos.Y.Offset + 45)
-    mainFrame.BackgroundTransparency = 1
-    TweenService:Create(mainFrame, TweenInfo.new(0.38, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-        Position = savedWindowPos,
+    mainFrame.Size = UDim2.new(0, mainWidth * 0.92, 0, mainHeight * 0.92)
+    mainFrame.Position = savedMainPos
+    mainFrame.BackgroundTransparency = 0.65
+    TweenService:Create(mainFrame, TweenInfo.new(0.36, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+        Size = UDim2.new(0, mainWidth, 0, mainHeight),
+        Position = savedMainPos,
         BackgroundTransparency = 0.04
     }):Play()
 end
 
-local isAnimatingMinMax = false
-
 minBtn.MouseButton1Click:Connect(function()
-    if isAnimatingMinMax then return end
-    isAnimatingMinMax = true
-    playSoundAsset(SOUND_MINIMIZE, 0.75, 1.0)
-
+    playClickSound()
+    savedMainPos = mainFrame.Position
     local hideTw = TweenService:Create(mainFrame, TweenInfo.new(0.28, Enum.EasingStyle.Quint, Enum.EasingDirection.In), {
-        Position = UDim2.new(savedWindowPos.X.Scale, savedWindowPos.X.Offset, savedWindowPos.Y.Scale, savedWindowPos.Y.Offset + 45),
-        BackgroundTransparency = 1
+        Size = UDim2.new(0, mainWidth * 0.9, 0, mainHeight * 0.9),
+        BackgroundTransparency = 0.75
     })
     hideTw:Play()
     hideTw.Completed:Connect(function()
         mainFrame.Visible = false
-        floatBtn.Position = savedFloatPos
-        floatBtn.Size = UDim2.new(0, 18, 0, 18)
-        floatBtn.BackgroundTransparency = 1
+        mainFrame.Size = UDim2.new(0, mainWidth, 0, mainHeight)
+        floatBtn.Position = savedSquarePos
+        floatBtn.Size = UDim2.new(0, squareSize * 0.7, 0, squareSize * 0.7)
+        floatBtn.ImageTransparency = 0.65
+        floatTexture.ImageTransparency = 0.65
         floatBtn.Visible = true
-
-        local sqTw = TweenService:Create(floatBtn, TweenInfo.new(0.32, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-            Size = UDim2.new(0, 52, 0, 52),
-            BackgroundTransparency = 0.05
-        })
-        sqTw:Play()
-        sqTw.Completed:Connect(function()
-            isAnimatingMinMax = false
-        end)
+        TweenService:Create(floatTexture, TweenInfo.new(0.28, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+            ImageTransparency = 0
+        }):Play()
+        TweenService:Create(floatBtn, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+            Size = UDim2.new(0, squareSize, 0, squareSize)
+        }):Play()
     end)
 end)
 
 floatClick.MouseButton1Click:Connect(function()
-    if floatWasDragged or isAnimatingMinMax then
-        floatWasDragged = false
+    if wasSquareDragged then
+        wasSquareDragged = false
         return
     end
-    isAnimatingMinMax = true
     playClickSound()
-
-    local shrinkTw = TweenService:Create(floatBtn, TweenInfo.new(0.2, Enum.EasingStyle.Quint, Enum.EasingDirection.In), {
-        Size = UDim2.new(0, 26, 0, 26),
-        BackgroundTransparency = 0.8
+    savedSquarePos = floatBtn.Position
+    local sqTw = TweenService:Create(floatBtn, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+        Size = UDim2.new(0, squareSize * 0.75, 0, squareSize * 0.75)
     })
-    shrinkTw:Play()
-    shrinkTw.Completed:Connect(function()
+    TweenService:Create(floatTexture, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+        ImageTransparency = 0.65
+    }):Play()
+    sqTw:Play()
+    sqTw.Completed:Connect(function()
         floatBtn.Visible = false
+        floatBtn.Size = UDim2.new(0, squareSize, 0, squareSize)
+        floatTexture.ImageTransparency = 0
         animateOpen()
-        task.delay(0.38, function()
-            isAnimatingMinMax = false
-        end)
     end)
 end)
 
 closeBtn.MouseButton1Click:Connect(function()
-    playClickSound()
-    local closeTw = TweenService:Create(mainFrame, TweenInfo.new(0.28, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
+    playDisableSound()
+    local clTw = TweenService:Create(mainFrame, TweenInfo.new(0.28, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
         Size = UDim2.new(0, 0, 0, 0),
-        Position = UDim2.new(savedWindowPos.X.Scale, savedWindowPos.X.Offset + 320, savedWindowPos.Y.Scale, savedWindowPos.Y.Offset + 205),
         BackgroundTransparency = 1
     })
-    closeTw:Play()
-    closeTw.Completed:Connect(function()
+    clTw:Play()
+    clTw.Completed:Connect(function()
         screenGui:Destroy()
     end)
 end)
 
-animateOpen()
+animateOpen() 
