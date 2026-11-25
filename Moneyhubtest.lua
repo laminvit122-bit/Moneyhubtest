@@ -2016,10 +2016,10 @@ local function applyActiveAura(char)
         buildRealAura(char, root, selectedAuraMode)
 end
 
-local function createAuraPreviewParticle(parent, name, color, size, transparency)
+local function createAuraPreviewPart(parent, name, shape, color, size, transparency)
     local part = Instance.new("Part")
     part.Name = name
-    part.Shape = Enum.PartType.Ball
+    part.Shape = shape
     part.Size = size
     part.Material = Enum.Material.Neon
     part.Color = color
@@ -2060,130 +2060,232 @@ local function buildPreviewAura()
     folder.Parent = previewWorld
     previewAuraFolder = folder
 
-    local objects = {}
-    local time = 0
+    local rng = Random.new()
+    local particles = {}
+    local elapsed = 0
 
-    if selectedAuraMode == "Noob" then
-        local exactNoobColors = {
-            Color3.fromRGB(125, 50, 255),
-            Color3.fromRGB(65, 160, 255),
-            Color3.fromRGB(200, 100, 255)
-        }
-
-        for i = 1, 24 do
-            local angle = (i / 24) * math.pi * 2
-            local col = exactNoobColors[((i - 1) % #exactNoobColors) + 1]
-            local part = createAuraPreviewParticle(
-                folder,
-                "NoobSpark_" .. i,
-                col,
-                Vector3.new(0.18, 0.18, 0.18),
-                0.1
-            )
-
-            table.insert(objects, {
-                part = part,
-                angle = angle,
-                height = ((i % 6) - 2.5) * 0.42,
-                radius = 1.05 + (i % 3) * 0.22,
-                speed = 1.1 + (i % 4) * 0.25,
-                size = 0.14 + (i % 3) * 0.05,
-                kind = "spark"
-            })
-        end
-    else
-        local exactFireColors = {
-            Color3.fromRGB(220, 140, 255),
-            Color3.fromRGB(155, 45, 255),
-            Color3.fromRGB(115, 20, 210),
-            Color3.fromRGB(88, 12, 185)
-        }
-
-        for i = 1, 24 do
-            local angle = (i / 24) * math.pi * 2
-            local col = exactFireColors[((i - 1) % #exactFireColors) + 1]
-            local part = createAuraPreviewParticle(
-                folder,
-                "FireTongue_" .. i,
-                col,
-                Vector3.new(0.22, 0.65, 0.22),
-                0.15
-            )
-
-            table.insert(objects, {
-                part = part,
-                angle = angle,
-                height = ((i % 5) - 2) * 0.45,
-                radius = 0.9 + (i % 4) * 0.18,
-                speed = 1.3 + (i % 4) * 0.22,
-                size = 0.18 + (i % 3) * 0.06,
-                kind = "flame"
-            })
-        end
-
-        local exactSmokeColors = {
-            Color3.fromRGB(92, 24, 168),
-            Color3.fromRGB(45, 10, 92)
-        }
-
-        for i = 1, 10 do
-            local angle = (i / 10) * math.pi * 2
-            local col = exactSmokeColors[((i - 1) % #exactSmokeColors) + 1]
-            local part = createAuraPreviewParticle(
-                folder,
-                "FireSmoke_" .. i,
-                col,
-                Vector3.new(0.45, 0.45, 0.45),
-                0.55
-            )
-
-            table.insert(objects, {
-                part = part,
-                angle = angle,
-                height = ((i % 4) - 1.5) * 0.55,
-                radius = 1.35,
-                speed = -0.7,
-                size = 0.36,
-                kind = "smoke"
-            })
+    -- Неоновый силуэт/подсветка вокруг персонажа в предпросмотре (имитация Highlight из реальной ауры)
+    local bodyShells = {}
+    for _, bp in ipairs(previewCharModel:GetChildren()) do
+        if bp:IsA("BasePart") and bp.Name ~= "HumanoidRootPart" and bp.Transparency < 0.9 then
+            local shell = bp:Clone()
+            shell:ClearAllChildren()
+            shell.Name = "AuraShell_" .. bp.Name
+            shell.Material = Enum.Material.Neon
+            shell.Color = selectedAuraMode == "Fire"
+                and Color3.fromRGB(165, 55, 255)
+                or Color3.fromRGB(125, 50, 255)
+            shell.Transparency = 0.82
+            shell.Size = bp.Size + Vector3.new(0.14, 0.14, 0.14)
+            shell.CFrame = bp.CFrame
+            shell.Anchored = true
+            shell.CanCollide = false
+            shell.CanTouch = false
+            shell.CanQuery = false
+            shell.CastShadow = false
+            shell.Parent = folder
+            table.insert(bodyShells, { shell = shell, source = bp })
         end
     end
 
-    previewConnection = RunService.RenderStepped:Connect(function(dt)
-        if not root.Parent or not folder.Parent then
-            return
-        end
+    if selectedAuraMode == "Noob" then
+        -- Точная эмуляция NoobPsyAura:
+        -- Искры вылетают из центра персонажа во все стороны (SpreadAngle 180, 180),
+        -- увеличиваются в середине жизни и затухают к концу (Size: 0.2 -> 0.95 -> 0)
+        local c0 = Color3.fromRGB(125, 50, 255)
+        local c1 = Color3.fromRGB(65, 160, 255)
+        local c2 = Color3.fromRGB(200, 100, 255)
 
-        time += dt
-
-        for _, data in ipairs(objects) do
-            local angle = data.angle + time * data.speed
-            local height = data.height + math.sin(time * 2.5 + data.angle) * 0.25
-            local radius = data.radius + math.sin(time * 1.8 + data.angle) * 0.1
-
-            local x = math.cos(angle) * radius
-            local z = math.sin(angle) * radius
-            local position = root.CFrame:PointToWorldSpace(Vector3.new(x, height, z))
-            local part = data.part
-            local pulse = (math.sin(time * 4 + data.angle) + 1) / 2
-            local scale = data.size * (0.8 + pulse * 0.45)
-
-            if data.kind == "flame" then
-                part.Size = Vector3.new(scale, scale * 2.4, scale)
-                part.CFrame = CFrame.new(position) * CFrame.Angles(
-                    math.sin(time * 3 + data.angle) * 0.35,
-                    angle,
-                    math.cos(time * 2.5 + data.angle) * 0.35
-                )
-            elseif data.kind == "smoke" then
-                part.Size = Vector3.new(scale * 1.3, scale * 1.3, scale * 1.3)
-                part.Position = position
+        local function resetNoobSpark(item, randomAge)
+            local dir = Vector3.new(
+                rng:NextNumber(-1, 1),
+                rng:NextNumber(-1, 1),
+                rng:NextNumber(-1, 1)
+            )
+            if dir.Magnitude < 0.05 then
+                dir = Vector3.new(0, 1, 0)
             else
-                part.Size = Vector3.new(scale, scale, scale)
-                part.Position = position
+                dir = dir.Unit
             end
+            item.origin = Vector3.new(
+                rng:NextNumber(-0.45, 0.45),
+                rng:NextNumber(-0.9, 1.1),
+                rng:NextNumber(-0.45, 0.45)
+            )
+            item.vel = dir * rng:NextNumber(2.0, 4.8)
+            item.rotAxis = Vector3.new(rng:NextNumber(-1, 1), rng:NextNumber(-1, 1), rng:NextNumber(-1, 1)).Unit
+            item.rotSpeed = rng:NextNumber(-4.5, 4.5)
+            item.lifetime = rng:NextNumber(0.55, 1.15)
+            item.age = randomAge and rng:NextNumber(0, item.lifetime) or 0
+            item.maxSize = rng:NextNumber(0.32, 0.55)
         end
-    end)
+
+        for i = 1, 48 do
+            local part = createAuraPreviewPart(
+                folder,
+                "NoobSpark_" .. i,
+                Enum.PartType.Block,
+                c0,
+                Vector3.new(0.1, 0.1, 0.1),
+                0.08
+            )
+            local item = { part = part, kind = "noob" }
+            resetNoobSpark(item, true)
+            table.insert(particles, item)
+        end
+
+        previewConnection = RunService.RenderStepped:Connect(function(dt)
+            if not root.Parent or not folder.Parent then return end
+            elapsed += dt
+            local wave = (math.sin(elapsed * 3) + 1) * 0.5
+
+            for _, sData in ipairs(bodyShells) do
+                sData.shell.CFrame = sData.source.CFrame
+                sData.shell.Color = c0:Lerp(c1, wave)
+                sData.shell.Transparency = 0.86 - wave * 0.12
+            end
+
+            for _, item in ipairs(particles) do
+                item.age += dt
+                if item.age >= item.lifetime then
+                    resetNoobSpark(item, false)
+                end
+                local t = item.age / item.lifetime
+                local localPos = item.origin + item.vel * item.age
+                local worldPos = root.CFrame:PointToWorldSpace(localPos)
+
+                -- Кривая размера из кода: 0 -> пик в 0.5 -> 0
+                local sizeFactor = (t < 0.5) and (0.2 + (t / 0.5) * 0.8) or (1.0 - ((t - 0.5) / 0.5))
+                local sz = math.max(0.03, item.maxSize * sizeFactor)
+
+                -- Градиент цвета из кода: 0 -> 0.5 -> 1
+                local col = (t < 0.5) and c0:Lerp(c1, t * 2) or c1:Lerp(c2, (t - 0.5) * 2)
+
+                item.part.Color = col
+                item.part.Transparency = 0.08 + (t * t) * 0.88
+                item.part.Size = Vector3.new(sz, sz, sz * 0.35)
+                item.part.CFrame = CFrame.new(worldPos) * CFrame.fromAxisAngle(item.rotAxis, item.age * item.rotSpeed)
+            end
+        end)
+    else
+        -- Точная эмуляция FirePurpleAura:
+        -- 1) CoreFlame: яркое фиолетовое пламя снизу вверх (Acceleration.Y = 12)
+        -- 2) OuterFlame: тёмно-фиолетовые внешние языки пламени
+        -- 3) EnergySmoke: тёмный энергетический дым выше тела
+        local coreC0 = Color3.fromRGB(220, 140, 255)
+        local coreC1 = Color3.fromRGB(155, 45, 255)
+        local coreC2 = Color3.fromRGB(88, 12, 185)
+
+        local outerC0 = Color3.fromRGB(115, 20, 210)
+        local outerC1 = Color3.fromRGB(68, 8, 145)
+        local outerC2 = Color3.fromRGB(28, 3, 68)
+
+        local smokeC0 = Color3.fromRGB(92, 24, 168)
+        local smokeC1 = Color3.fromRGB(45, 10, 92)
+        local smokeC2 = Color3.fromRGB(18, 4, 38)
+
+        local function resetFireParticle(item, randomAge)
+            local angle = rng:NextNumber(0, math.pi * 2)
+            if item.layer == "core" then
+                local r = rng:NextNumber(0.15, 0.85)
+                item.origin = Vector3.new(math.cos(angle) * r, rng:NextNumber(-1.4, -0.4), math.sin(angle) * r)
+                item.vel = Vector3.new(math.cos(angle) * rng:NextNumber(0.2, 0.9), rng:NextNumber(2.8, 5.2), math.sin(angle) * rng:NextNumber(0.2, 0.9))
+                item.accelY = 5.5
+                item.lifetime = rng:NextNumber(0.45, 0.85)
+                item.baseScale = rng:NextNumber(0.42, 0.68)
+            elseif item.layer == "outer" then
+                local r = rng:NextNumber(0.35, 1.15)
+                item.origin = Vector3.new(math.cos(angle) * r, rng:NextNumber(-1.7, -0.7), math.sin(angle) * r)
+                item.vel = Vector3.new(math.cos(angle) * rng:NextNumber(0.35, 1.25), rng:NextNumber(2.2, 4.4), math.sin(angle) * rng:NextNumber(0.35, 1.25))
+                item.accelY = 4.2
+                item.lifetime = rng:NextNumber(0.6, 1.05)
+                item.baseScale = rng:NextNumber(0.55, 0.85)
+            else
+                local r = rng:NextNumber(0.4, 1.35)
+                item.origin = Vector3.new(math.cos(angle) * r, rng:NextNumber(-0.6, 0.3), math.sin(angle) * r)
+                item.vel = Vector3.new(math.cos(angle) * rng:NextNumber(0.4, 1.1), rng:NextNumber(1.6, 3.1), math.sin(angle) * rng:NextNumber(0.4, 1.1))
+                item.accelY = 2.8
+                item.lifetime = rng:NextNumber(0.8, 1.35)
+                item.baseScale = rng:NextNumber(0.65, 1.05)
+            end
+            item.phase = rng:NextNumber(0, math.pi * 2)
+            item.rotY = angle
+            item.age = randomAge and rng:NextNumber(0, item.lifetime) or 0
+        end
+
+        for i = 1, 28 do
+            local p = createAuraPreviewPart(folder, "CoreFlame_" .. i, Enum.PartType.Ball, coreC0, Vector3.new(0.4, 0.8, 0.4), 0.2)
+            local item = { part = p, layer = "core" }
+            resetFireParticle(item, true)
+            table.insert(particles, item)
+        end
+
+        for i = 1, 24 do
+            local p = createAuraPreviewPart(folder, "OuterFlame_" .. i, Enum.PartType.Ball, outerC0, Vector3.new(0.5, 1.0, 0.5), 0.28)
+            local item = { part = p, layer = "outer" }
+            resetFireParticle(item, true)
+            table.insert(particles, item)
+        end
+
+        for i = 1, 14 do
+            local p = createAuraPreviewPart(folder, "EnergySmoke_" .. i, Enum.PartType.Ball, smokeC0, Vector3.new(0.7, 0.7, 0.7), 0.55)
+            local item = { part = p, layer = "smoke" }
+            resetFireParticle(item, true)
+            table.insert(particles, item)
+        end
+
+        previewConnection = RunService.RenderStepped:Connect(function(dt)
+            if not root.Parent or not folder.Parent then return end
+            elapsed += dt
+            local wave = (math.sin(elapsed * 3) + 1) * 0.5
+
+            for _, sData in ipairs(bodyShells) do
+                sData.shell.CFrame = sData.source.CFrame
+                sData.shell.Color = Color3.fromRGB(130, 35, 245):Lerp(Color3.fromRGB(195, 110, 255), wave)
+                sData.shell.Transparency = 0.84 - wave * 0.14
+            end
+
+            for _, item in ipairs(particles) do
+                item.age += dt
+                if item.age >= item.lifetime then
+                    resetFireParticle(item, false)
+                end
+
+                local t = item.age / item.lifetime
+                local swayX = math.sin(elapsed * 5.5 + item.phase) * 0.18 * t
+                local swayZ = math.cos(elapsed * 5.0 + item.phase) * 0.18 * t
+
+                local localPos = Vector3.new(
+                    item.origin.X + item.vel.X * item.age + swayX,
+                    item.origin.Y + item.vel.Y * item.age + 0.5 * item.accelY * (item.age * item.age),
+                    item.origin.Z + item.vel.Z * item.age + swayZ
+                )
+                local worldPos = root.CFrame:PointToWorldSpace(localPos)
+
+                if item.layer == "core" then
+                    local sizeCurve = (t < 0.4) and (0.6 + (t / 0.4) * 0.6) or (1.2 * (1 - ((t - 0.4) / 0.6)))
+                    local w = math.max(0.05, item.baseScale * sizeCurve)
+                    item.part.Color = (t < 0.45) and coreC0:Lerp(coreC1, t / 0.45) or coreC1:Lerp(coreC2, (t - 0.45) / 0.55)
+                    item.part.Transparency = 0.18 + (t * t) * 0.8
+                    item.part.Size = Vector3.new(w, w * 2.1, w)
+                    item.part.CFrame = CFrame.new(worldPos) * CFrame.Angles(swayZ * 1.4, item.rotY + elapsed * 2, -swayX * 1.4)
+                elseif item.layer == "outer" then
+                    local sizeCurve = (t < 0.5) and (0.65 + (t / 0.5) * 0.55) or (1.2 * (1 - ((t - 0.5) / 0.5)))
+                    local w = math.max(0.06, item.baseScale * sizeCurve)
+                    item.part.Color = (t < 0.55) and outerC0:Lerp(outerC1, t / 0.55) or outerC1:Lerp(outerC2, (t - 0.55) / 0.45)
+                    item.part.Transparency = 0.28 + (t * t) * 0.7
+                    item.part.Size = Vector3.new(w, w * 2.3, w)
+                    item.part.CFrame = CFrame.new(worldPos) * CFrame.Angles(-swayX * 1.3, item.rotY - elapsed * 1.6, swayZ * 1.3)
+                else
+                    local w = item.baseScale * (0.65 + t * 0.9)
+                    item.part.Color = (t < 0.6) and smokeC0:Lerp(smokeC1, t / 0.6) or smokeC1:Lerp(smokeC2, (t - 0.6) / 0.4)
+                    item.part.Transparency = 0.56 + t * 0.42
+                    item.part.Size = Vector3.new(w, w * 1.25, w)
+                    item.part.Position = worldPos
+                end
+            end
+        end)
+    end
 end
 
 local function buildAuraPreviewUI(panel)
@@ -2466,14 +2568,6 @@ end, true, function(panel)
     buildAuraPreviewUI(panel)
 end, 266)
 setAuraUIState = setAuraUIFunc
-
-player.CharacterAdded:Connect(function(char)
-    if auraEnabled then
-        task.delay(1, function()
-            applyActiveAura(char)
-        end)
-    end
-end)
 
 -- РОВНЫЕ СИММЕТРИЧНЫЕ АНГЕЛЬСКИЕ КРЫЛЬЯ НА СПИНЕ
 local angelWingsModel = nil
