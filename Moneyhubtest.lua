@@ -14,7 +14,7 @@ local SoundService = game:GetService("SoundService")
 local VirtualInputManager = game:GetService("VirtualInputManager")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local player = Players.LocalPlayer
+local player = Players.LocalPlayer or Players:GetPropertyChangedSignal("LocalPlayer"):Wait() or Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 local camera = Workspace.CurrentCamera
 
@@ -583,7 +583,7 @@ configTabBtn.ZIndex = 3
 configTabBtn.Parent = sidebar
 
 local configTabCorner = Instance.new("UICorner") configTabCorner.CornerRadius = UDim.new(0, 7) configTabCorner.Parent = configTabBtn
-local configIconImg = Instance.new("ImageLabel") configIconImg.Size = UDim2.new(0, 14, 0, 14) configIconImg.Position = UDim2.new(0, 12, 0, 6) configIconImg.BackgroundTransparency = 1 configIconImg.Image = CONFIGS_ICON configIconImg.ZIndex = 4 configTabBtn.Parent = sidebar
+local configIconImg = Instance.new("ImageLabel") configIconImg.Size = UDim2.new(0, 14, 0, 14) configIconImg.Position = UDim2.new(0, 12, 0, 6) configIconImg.BackgroundTransparency = 1 configIconImg.Image = CONFIGS_ICON configIconImg.ZIndex = 4 configIconImg.Parent = configTabBtn
 
 -- Верхняя панель
 local topBarArea = Instance.new("Frame")
@@ -937,7 +937,11 @@ end
 
 updateAllTranslations = function()
     for _, item in ipairs(translatableCards) do
-        item.lbl.Text = (currentLanguage == "EN") and item.en or item.ru
+        if item.lbl:IsA("TextBox") then
+            item.lbl.PlaceholderText = (currentLanguage == "EN") and item.en or item.ru
+        else
+            item.lbl.Text = (currentLanguage == "EN") and item.en or item.ru
+        end
     end
     searchInput.PlaceholderText = tr("Поиск...", "Search...")
 end
@@ -3055,12 +3059,18 @@ configListContainer.Parent = configPage
 
 local function refreshConfigList()
     for _, ch in ipairs(configListContainer:GetChildren()) do ch:Destroy() end
-    if not isfolder(configsFolder) then makefolder(configsFolder) end
-    local files = listfiles(configsFolder)
+    if type(isfolder) ~= "function" or type(makefolder) ~= "function" or type(listfiles) ~= "function" then
+        return
+    end
+    local ok, files = pcall(function()
+        if not isfolder(configsFolder) then makefolder(configsFolder) end
+        return listfiles(configsFolder)
+    end)
+    if not ok or type(files) ~= "table" then return end
     local yOffset = 0
 
     for _, file in ipairs(files) do
-        local cfgName = file:match("([^/]+)$"):gsub(".json", "")
+        local cfgName = tostring(file):match("([^/\\]+)$"):gsub("%.json$", "")
 
         local itemFrame = Instance.new("Frame")
         itemFrame.Size = UDim2.new(1, -5, 0, 36)
@@ -3090,6 +3100,7 @@ local function refreshConfigList()
 
         saveBtn.MouseButton1Click:Connect(function()
             playClickSound()
+            if type(writefile) ~= "function" then return end
             local data = {
                 SelectedStyle = selectedStyle, AutoFarm = autoFarmEnabled, SafeZoneOnHit = autoFarmSafeZoneOnHit,
                 AimAssist = aimAssistEnabled, AimTarget = aimTargetPart, AimSmoothness = aimSmoothness,
@@ -3098,12 +3109,15 @@ local function refreshConfigList()
                 WorldVisuals = worldVisualsEnabled, AuraEnabled = auraEnabled, AuraMode = selectedAuraMode, AngelWings = angelWingsEnabled,
                 ParticleType = currentParticleType, WorldParticleType = worldParticleType, WorldSpeed = worldSpeedMultiplier, Language = currentLanguage
             }
-            writefile(configsFolder .. "/" .. cfgName .. ".json", HttpService:JSONEncode(data))
+            pcall(function()
+                writefile(configsFolder .. "/" .. cfgName .. ".json", HttpService:JSONEncode(data))
+            end)
             showNotification("Configs", tr("Сохранено: ", "Saved: ") .. cfgName)
         end)
 
         loadBtn.MouseButton1Click:Connect(function()
             playClickSound()
+            if type(readfile) ~= "function" then return end
             pcall(function()
                 local content = readfile(configsFolder .. "/" .. cfgName .. ".json")
                 local data = HttpService:JSONDecode(content)
@@ -3137,8 +3151,10 @@ local function refreshConfigList()
 
         delBtn.MouseButton1Click:Connect(function()
             playDisableSound()
-            if delfile then
-                delfile(configsFolder .. "/" .. cfgName .. ".json")
+            if type(delfile) == "function" then
+                pcall(function()
+                    delfile(configsFolder .. "/" .. cfgName .. ".json")
+                end)
                 refreshConfigList()
                 showNotification("Configs", tr("Удалено: ", "Deleted: ") .. cfgName)
             end
@@ -3152,9 +3168,13 @@ end
 createCfgBtn.MouseButton1Click:Connect(function()
     playClickSound()
     local name = configNameBox.Text
-    if name and name ~= "" then
-        if not isfolder(configsFolder) then makefolder(configsFolder) end
-        writefile(configsFolder .. "/" .. name .. ".json", HttpService:JSONEncode({ SelectedStyle = "", AutoFarm = false, SafeZoneOnHit = true, AimAssist = false, AimTarget = "Torso", AimSmoothness = 0.2, SpeedHack = false, WalkSpeed = 32, FakeDashEnabled = false, FakeDashKeyName = "Q", FakeDashMobile = false, Fullbright = false, ScriptVisuals = false, WorldVisuals = false, AuraEnabled = false, AuraMode = "Noob", AngelWings = false, ParticleType = "🌸", WorldParticleType = "🌸", WorldSpeed = 1.0, Language = currentLanguage }))
+    if name and name ~= "" and type(writefile) == "function" then
+        pcall(function()
+            if type(isfolder) == "function" and type(makefolder) == "function" and not isfolder(configsFolder) then
+                makefolder(configsFolder)
+            end
+            writefile(configsFolder .. "/" .. name .. ".json", HttpService:JSONEncode({ SelectedStyle = "", AutoFarm = false, SafeZoneOnHit = true, AimAssist = false, AimTarget = "Torso", AimSmoothness = 0.2, SpeedHack = false, WalkSpeed = 32, FakeDashEnabled = false, FakeDashKeyName = "Q", FakeDashMobile = false, Fullbright = false, ScriptVisuals = false, WorldVisuals = false, AuraEnabled = false, AuraMode = "Noob", AngelWings = false, ParticleType = "🌸", WorldParticleType = "🌸", WorldSpeed = 1.0, Language = currentLanguage }))
+        end)
         configNameBox.Text = ""
         refreshConfigList()
         showNotification("Configs", tr("Создан конфиг", "Config created"))
@@ -3429,7 +3449,6 @@ minBtn.MouseButton1Click:Connect(function()
         mainFrame.Size = UDim2.new(0, mainWidth, 0, mainHeight)
         floatBtn.Position = savedSquarePos
         floatBtn.Size = UDim2.new(0, squareSize * 0.7, 0, squareSize * 0.7)
-        floatBtn.ImageTransparency = 0.65
         floatTexture.ImageTransparency = 0.65
         floatBtn.Visible = true
         TweenService:Create(floatTexture, TweenInfo.new(0.28, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
@@ -3475,4 +3494,4 @@ closeBtn.MouseButton1Click:Connect(function()
     end)
 end)
 
-animateOpen() 
+animateOpen()
